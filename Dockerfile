@@ -4,12 +4,15 @@ FROM node:18
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json (if exists)
-COPY package.json ./
+# Copy package manifests
+COPY package.json package-lock.json ./
 
 
-# Install dependencies (none required beyond Node built‑ins, but run npm ci for future packages)
+# Install compilation tools needed by better-sqlite3
 RUN apt-get update && apt-get install -y python3 make g++ libsqlite3-dev && rm -rf /var/lib/apt/lists/*
+
+# Install production dependencies
+RUN npm ci --omit=dev
 
 
 # Copy the rest of the application code
