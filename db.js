@@ -1,4 +1,4 @@
-const { DatabaseSync } = require('node:sqlite');
+const DatabaseSync = require('better-sqlite3');
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');

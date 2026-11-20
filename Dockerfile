@@ -1,5 +1,5 @@
 # Use official Node.js LTS image
-FROM node:18-alpine
+FROM node:18
 
 # Set working directory
 WORKDIR /app
@@ -9,7 +9,8 @@ COPY package.json ./
 
 
 # Install dependencies (none required beyond Node built‑ins, but run npm ci for future packages)
-RUN npm ci --only=production || npm install --production
+RUN apt-get update && apt-get install -y python3 make g++ libsqlite3-dev && rm -rf /var/lib/apt/lists/*
+
 
 # Copy the rest of the application code
 COPY . .
