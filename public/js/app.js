@@ -2,6 +2,15 @@
 // OFICINA PRO - Motor de Lógica Frontend & Utilitários
 // ============================================================================
 
+// Habilita instalação como aplicativo no Android/Chrome (PWA).
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js').catch((err) => {
+      console.warn('PWA indisponível neste navegador:', err);
+    });
+  });
+}
+
 const API = {
   async get(endpoint) {
     const res = await fetch(endpoint);
