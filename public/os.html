@@ -911,9 +911,26 @@
       `;
     }
 
+    // Impede duplo clique enquanto um salvamento ainda está em andamento.
+    function beginFormSubmit(form, event) {
+      if (form.dataset.submitting === 'true') return null;
+      const button = event.submitter || form.querySelector('button[type="submit"]');
+      form.dataset.submitting = 'true';
+      if (button) button.disabled = true;
+      return button;
+    }
+
+    function endFormSubmit(form, button) {
+      form.dataset.submitting = 'false';
+      if (button) button.disabled = false;
+    }
+
     // Fixar / Salvar Taxa Única de Diagnóstico
     document.getElementById('form-taxa-diagnostico').onsubmit = async (e) => {
       e.preventDefault();
+      const form = e.currentTarget;
+      const button = beginFormSubmit(form, e);
+      if (!button) return;
       try {
         const payload = {
           tipo: 'servico',
@@ -928,15 +945,20 @@
         };
         await API.post(`/api/os/${osId}/item`, payload);
         alert('Taxa única de diagnóstico salva com sucesso!');
-        loadOS();
+        await loadOS();
       } catch (err) {
         alert('Erro ao salvar diagnóstico: ' + err.message);
+      } finally {
+        endFormSubmit(form, button);
       }
     };
 
     // Adicionar Tarefa/Serviço Incluso (R$ 0,00 adicional)
     document.getElementById('form-tarefa-inclusa').onsubmit = async (e) => {
       e.preventDefault();
+      const form = e.currentTarget;
+      const button = beginFormSubmit(form, e);
+      if (!button) return;
       try {
         // Garante que se ainda não existir taxa de diagnóstico cadastrada, cria a base padrão primeiro
         const diagExistente = (currentOS.itens || []).find(i => i.modalidade_cobranca === 'taxa_diagnostico');
@@ -969,9 +991,11 @@
 
         await API.post(`/api/os/${osId}/item`, payload);
         document.getElementById('tarefa-inclusa-desc').value = '';
-        loadOS();
+        await loadOS();
       } catch (err) {
         alert('Erro ao adicionar tarefa inclusa: ' + err.message);
+      } finally {
+        endFormSubmit(form, button);
       }
     };
 
@@ -993,6 +1017,9 @@
 
     document.getElementById('form-servico-extra').onsubmit = async (e) => {
       e.preventDefault();
+      const form = e.currentTarget;
+      const button = beginFormSubmit(form, e);
+      if (!button) return;
       try {
         const payload = {
           tipo: 'servico',
@@ -1008,9 +1035,11 @@
         await API.post(`/api/os/${osId}/item`, payload);
         document.getElementById('extra-servico-desc').value = '';
         document.getElementById('extra-servico-valor').value = '';
-        loadOS();
+        await loadOS();
       } catch (err) {
         alert('Erro ao adicionar mão de obra: ' + err.message);
+      } finally {
+        endFormSubmit(form, button);
       }
     };
 
