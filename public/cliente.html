@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Prontuário & Laudo Técnico do Veículo</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      background-color: #0b1120;
+      color: #f1f5f9;
+      font-size: 15px;
+    }
+    .client-container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 16px 12px 60px 12px;
+    }
+    .header-portal {
+      text-align: center;
+      padding: 24px 16px 20px 16px;
+      background: linear-gradient(180deg, #1e293b, #0f172a);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+      margin-bottom: 20px;
+    }
+    .client-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
+    .client-card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #334155;
+    }
+    .floating-approve-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid #334155;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 99;
+    }
+    .status-badge-lg {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="client-container">
+
+    <!-- Topo da Oficina -->
+    <header class="header-portal">
+      <div style="font-size: 2.2rem; margin-bottom: 6px;">🔧</div>
+      <h1 style="font-size: 1.35rem; font-weight: 800; color: #fff;" id="nome-oficina">Oficina Mecânica</h1>
+      <div style="font-size: 0.85rem; color: var(--text-secondary);">Prontuário Técnico Digital & Laudo de Vistoria</div>
+      
+      <div style="margin-top: 16px;">
+        <span class="license-plate" style="transform: scale(1.1); margin-bottom: 6px;">
+          <span class="plate-header">BRASIL</span>
+          <span class="plate-number" id="veiculo-placa">...</span>
+        </span>
+        <div style="font-size: 1.05rem; font-weight: 700; color: #fff; margin-top: 8px;" id="veiculo-modelo">...</div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary);" id="veiculo-cliente">...</div>
+      </div>
+
+      <div id="status-atendimento-badge"></div>
+
+      <div style="margin-top: 14px;">
+        <button class="btn btn-secondary btn-sm" onclick="window.print()" style="font-size: 0.8rem; padding: 6px 14px;">
+          <span>📄</span> <strong>Salvar / Imprimir em PDF</strong>
+        </button>
+      </div>
+    </header>
+
+    <!-- Resumo do Atendimento & Vistoria de Recepção -->
+    <section class="client-card">
+      <div class="client-card-title">
+        <span>🛡️</span> Vistoria Fotográfica de Entrada (Pátio)
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+        Fotos registradas no exato momento da entrada do seu veículo para total transparência e respaldo das condições físicas e nível de combustível.
+      </p>
+
+      <div class="evidence-grid" id="fotos-vistoria-cliente">
+        <!-- Fotos de Vistoria -->
+      </div>
+    </section>
+
+    <!-- Diagnóstico Técnico de Bancada & Testes -->
+    <section class="client-card">
+      <div class="client-card-title">
+        <span>🔬</span> Diagnóstico Técnico & Evidências
+      </div>
+      
+      <div style="background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-md); padding: 12px; margin-bottom: 14px;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Relato / Queixa Informada:</div>
+        <div style="font-size: 0.95rem; margin-top: 4px;" id="queixa-cliente-texto">-</div>
+      </div>
+
+      <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">
+        Imagens dos Testes Realizados (Osciloscópio / Scanner / Inspeção):
+      </div>
+      <div class="evidence-grid" id="fotos-tecnicas-cliente">
+        <!-- Fotos Técnicas Autorizadas -->
+      </div>
+    </section>
+
+    <!-- Orçamento Detalhado & Transparente -->
+    <section class="client-card">
+      <div class="client-card-title">
+        <span>📋</span> Orçamento dos Serviços e Peças
+      </div>
+      
+      <div class="table-responsive">
+        <table class="custom-table" style="font-size: 0.95rem;">
+          <thead>
+            <tr>
+              <th>Item / Descrição</th>
+              <th style="text-align: center;">Qtd</th>
+              <th style="text-align: right;">Valor</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-orcamento-cliente">
+            <!-- Itens -->
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top: 16px; padding-top: 14px; border-top: 2px solid #334155; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 1.1rem; font-weight: 700;">VALOR TOTAL:</span>
+        <span style="font-size: 1.5rem; font-weight: 900; color: var(--accent-success);" id="valor-total-cliente">R$ 0,00</span>
+      </div>
+    </section>
+
+    <!-- Pontos de Atenção para Próxima Revisão (Pendências) -->
+    <section class="client-card" id="secao-pontos-atencao" style="border-color: rgba(245, 158, 11, 0.4);">
+      <div class="client-card-title" style="color: var(--accent-warning);">
+        <span>⚠️</span> Pontos de Atenção para a Próxima Revisão
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+        Identificamos estes itens durante a inspeção que não impedem a liberação imediata, mas recomendamos acompanhamento ou troca preventiva no prazo informado:
+      </p>
+
+      <div id="lista-pontos-atencao">
+        <!-- Pendências -->
+      </div>
+    </section>
+
+    <!-- Botão de Aprovação na Barra Inferior -->
+    <div class="floating-approve-bar" id="bar-aprovacao">
+      <div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Total Orçado</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent-success);" id="bar-valor-total">R$ 0,00</div>
+      </div>
+      <div id="bar-action-container">
+        <button class="btn btn-success" style="font-size: 1rem; padding: 10px 18px;" id="btn-aprovar-orcamento">
+          <span>✓</span> <strong>Aprovar Orçamento</strong>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    const token = window.location.pathname.split('/').pop();
+    let portalData = null;
+
+    async function loadPortal() {
+      try {
+        portalData = await API.get(`/api/portal/${token}`);
+
+        document.getElementById('nome-oficina').innerText = portalData.nome_oficina;
+        document.getElementById('veiculo-placa').innerText = Utils.formatPlaca(portalData.placa);
+        document.getElementById('veiculo-modelo').innerText = portalData.modelo_ano;
+        document.getElementById('veiculo-cliente').innerText = `Proprietário: ${portalData.cliente_nome} • ${Utils.formatKm(portalData.km_entrada)}`;
+        document.getElementById('queixa-cliente-texto').innerText = portalData.queixa_cliente || 'Nenhum relato específico registrado.';
+
+        // Status
+        const statusMap = {
+          agendado: '<span class="status-badge-lg badge-blue">📅 Atendimento Agendado</span>',
+          diagnostico: '<span class="status-badge-lg badge-blue">🔬 Em Diagnóstico de Bancada</span>',
+          aguardando: '<span class="status-badge-lg badge-warning">⏳ Aguardando Aprovação</span>',
+          execucao: '<span class="status-badge-lg badge-purple">🛠️ Em Execução / Reparo</span>',
+          pronto: '<span class="status-badge-lg badge-success">✅ Veículo Pronto para Retirada</span>',
+          entregue: '<span class="status-badge-lg badge-success">🚗 Veículo Entregue</span>'
+        };
+        document.getElementById('status-atendimento-badge').innerHTML = statusMap[portalData.status_patio] || '';
+
+        // Vistoria
+        const vistoriaFotos = portalData.evidencias.filter(e => e.categoria === 'vistoria_entrada');
+        const vistoriaContainer = document.getElementById('fotos-vistoria-cliente');
+        vistoriaContainer.innerHTML = vistoriaFotos.length === 0
+          ? `<div style="grid-column: 1/-1; color: var(--text-muted); font-size: 0.85rem;">Nenhuma foto anexada.</div>`
+          : vistoriaFotos.map(e => `
+              <div class="evidence-card">
+                <a href="${e.storage_path}" target="_blank">
+                  <img src="${e.storage_path}" class="evidence-img">
+                </a>
+                <div class="evidence-meta">
+                  <strong>${e.titulo_observacao || 'Vistoria de Recepção'}</strong>
+                  <div style="font-size: 0.7rem; color: var(--text-muted);">${Utils.formatDate(e.created_at)}</div>
+                </div>
+              </div>
+            `).join('');
+
+        // Fotos Técnicas
+        const tecnicaFotos = portalData.evidencias.filter(e => e.categoria !== 'vistoria_entrada');
+        const tecnicaContainer = document.getElementById('fotos-tecnicas-cliente');
+        tecnicaContainer.innerHTML = tecnicaFotos.length === 0
+          ? `<div style="grid-column: 1/-1; color: var(--text-muted); font-size: 0.85rem;">Nenhum registro técnico adicional anexado.</div>`
+          : tecnicaFotos.map(e => `
+              <div class="evidence-card">
+                <a href="${e.storage_path}" target="_blank">
+                  <img src="${e.storage_path}" class="evidence-img">
+                </a>
+                <div class="evidence-meta">
+                  <strong>${e.titulo_observacao || 'Captura Técnica'}</strong>
+                  <div style="font-size: 0.7rem; color: var(--text-muted);">${Utils.formatDate(e.created_at)}</div>
+                </div>
+              </div>
+            `).join('');
+
+        // Orçamento dos Itens (TRANSPARENTE - SEM DADOS SIGILOSOS)
+        const tbody = document.getElementById('tabela-orcamento-cliente');
+        tbody.innerHTML = portalData.itens.map(it => {
+          let badge = '';
+          if (it.tipo === 'servico') {
+            if (it.modalidade_cobranca === 'taxa_diagnostico') {
+              badge = '<span class="badge badge-blue">🔬 Diagnóstico Técnico</span>';
+            } else if (it.modalidade_cobranca === 'incluso_diagnostico') {
+              badge = '<span class="badge badge-success">🟢 Incluso no Valor do Diagnóstico (R$ 0,00)</span>';
+            } else if (it.modalidade_cobranca === 'abatimento_diagnostico') {
+              badge = '<span class="badge badge-warning">🏷️ Abatimento de Diagnóstico</span>';
+            } else {
+              badge = '<span class="badge badge-purple">Mão de Obra</span>';
+            }
+          } else {
+            badge = it.origem === 'cliente' 
+              ? '<span class="badge badge-warning">👤 Peça Fornecida pelo Cliente</span>' 
+              : '<span class="badge badge-blue">📦 Peça Nova (Oficina)</span>';
+          }
+
+          return `
+            <tr>
+              <td>
+                <div style="font-weight: 700; color: #fff;">${it.descricao}</div>
+                <div style="margin-top: 4px;">${badge}</div>
+              </td>
+              <td style="text-align: center;">${it.quantidade}</td>
+              <td style="text-align: right; font-weight: 800;">
+                ${it.modalidade_cobranca === 'incluso_diagnostico' 
+                  ? '<span style="color: var(--accent-success);">R$ 0,00</span>' 
+                  : Utils.formatCurrency(it.preco_venda_total)}
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        const totalFormatado = Utils.formatCurrency(portalData.totalGeral);
+        document.getElementById('valor-total-cliente').innerText = totalFormatado;
+        document.getElementById('bar-valor-total').innerText = totalFormatado;
+
+        // Pontos de Atenção / Pendências
+        const secaoPontos = document.getElementById('secao-pontos-atencao');
+        const listaPontos = document.getElementById('lista-pontos-atencao');
+        if (portalData.pendencias && portalData.pendencias.length > 0) {
+          secaoPontos.style.display = 'block';
+          listaPontos.innerHTML = portalData.pendencias.map(p => `
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid #334155; border-radius: var(--radius-md); padding: 12px; margin-bottom: 8px;">
+              <div style="font-weight: 700; font-size: 0.95rem; color: #fff;">⚠️ ${p.descricao_defeito}</div>
+              <div style="font-size: 0.8rem; color: var(--accent-warning); margin-top: 4px;">Recomendado revisar até: <strong>${Utils.formatDateSimple(p.data_prevista_retorno)}</strong></div>
+            </div>
+          `).join('');
+        } else {
+          secaoPontos.style.display = 'none';
+        }
+
+        // Estado da Aprovação
+        const barAction = document.getElementById('bar-action-container');
+        if (portalData.aprovado_cliente_em) {
+          barAction.innerHTML = `
+            <div style="text-align: right;">
+              <span class="badge badge-success" style="font-size: 0.85rem; padding: 6px 12px;">✓ Orçamento Aprovado!</span>
+              <div style="font-size: 0.7rem; color: var(--text-secondary);">${Utils.formatDate(portalData.aprovado_cliente_em)}</div>
+            </div>
+          `;
+        } else {
+          document.getElementById('btn-aprovar-orcamento').onclick = async () => {
+            if (confirm(`Confirmar a aprovação do orçamento no valor de ${totalFormatado}?`)) {
+              try {
+                await API.post(`/api/portal/${token}`);
+                alert('Orçamento aprovado com sucesso! A oficina já foi notificada para iniciar os reparos.');
+                loadPortal();
+              } catch (err) {
+                alert('Erro ao aprovar: ' + err.message);
+              }
+            }
+          };
+        }
+
+      } catch (err) {
+        console.error(err);
+        document.body.innerHTML = `
+          <div style="text-align: center; padding: 60px 20px;">
+            <h2>Prontuário Não Encontrado</h2>
+            <p style="color: var(--text-secondary); margin-top: 10px;">O link pode estar expirado ou incorreto.</p>
+          </div>
+        `;
+      }
+    }
+
+    loadPortal();
+  </script>
+</body>
+</html>

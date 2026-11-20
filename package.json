@@ -1,0 +1,19 @@
+{
+  "name": "oficina-pro",
+  "version": "1.0.0",
+  "description": "Sistema de Gestão Técnica & Pátio para Oficina Mecânica",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node seed.js"
+  },
+  "keywords": [
+    "oficina",
+    "mecanica",
+    "automotivo",
+    "kanban",
+    "markup"
+  ],
+  "author": "",
+  "license": "ISC"
+}

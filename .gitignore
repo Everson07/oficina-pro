@@ -1,0 +1,8 @@
+# .gitignore
+node_modules/
+.env
+*.log
+*.sqlite
+oficina.db
+oficina.db-shm
+oficina.db-wal

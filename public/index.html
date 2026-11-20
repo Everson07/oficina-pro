@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Oficina Pro - Gestão Técnica & Pátio</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="app-header">
+    <div class="brand-section" onclick="window.location.reload()">
+      <div class="brand-icon">🔧</div>
+      <div>
+        <div class="brand-title" id="shop-name-display">Oficina Pro</div>
+        <div class="brand-subtitle">Gestão Técnica & Pátio • Zero Burocracia</div>
+      </div>
+    </div>
+
+    <!-- Busca Global -->
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="global-search-input" class="search-input" placeholder="Buscar por placa, cliente, telefone ou veículo...">
+    </div>
+
+    <!-- Ações Topo -->
+    <div class="header-actions">
+      <button class="btn btn-secondary btn-icon" id="btn-toggle-theme" title="Alternar Tema Claro/Escuro">🌓</button>
+      <button class="btn btn-secondary btn-icon" id="btn-open-config" title="Configurações da Oficina">⚙️</button>
+      <button class="btn btn-primary" id="btn-nova-os">
+        <span>➕</span> <strong>Nova Entrada (Placa)</strong>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Indicadores Rápidos de Pátio -->
+    <section class="stats-grid" id="stats-summary">
+      <div class="stat-card" style="border-left: 4px solid var(--accent-primary);">
+        <span class="stat-label">Carros no Pátio</span>
+        <span class="stat-value" id="stat-total-patio">0</span>
+        <span class="stat-desc">Atendimento em andamento</span>
+      </div>
+      <div class="stat-card" style="border-left: 4px solid var(--accent-cyan);">
+        <span class="stat-label">Em Diagnóstico</span>
+        <span class="stat-value" id="stat-diagnostico">0</span>
+        <span class="stat-desc">Bancada / Testes</span>
+      </div>
+      <div class="stat-card" style="border-left: 4px solid var(--accent-warning);">
+        <span class="stat-label">Aguardando Aprovação / Peça</span>
+        <span class="stat-value" id="stat-aguardando">0</span>
+        <span class="stat-desc">Orçamento enviado ou peças</span>
+      </div>
+      <div class="stat-card" style="border-left: 4px solid var(--accent-purple);">
+        <span class="stat-label">Em Execução</span>
+        <span class="stat-value" id="stat-execucao">0</span>
+        <span class="stat-desc">Reparos sendo executados</span>
+      </div>
+      <div class="stat-card" style="border-left: 4px solid var(--accent-success);">
+        <span class="stat-label">Prontos para Retirada</span>
+        <span class="stat-value" id="stat-pronto">0</span>
+        <span class="stat-desc">Aguardando o cliente</span>
+      </div>
+    </section>
+
+    <!-- Visão Financeira Real (com Botão Ocultar para Sigilo) -->
+    <section class="finance-card">
+      <div class="finance-header">
+        <div>
+          <strong style="font-size: 1.1rem; color: #fff;">📊 Visão Financeira Real</strong>
+          <span style="font-size: 0.8rem; color: var(--text-secondary); margin-left: 8px;">(Markup Divisor com Imposto Provisionado)</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-toggle-finance">
+          <span id="eye-icon">👁️</span> <span id="eye-text">Ocultar Valores</span>
+        </button>
+      </div>
+      <div class="finance-metrics" id="finance-values-container">
+        <div class="finance-item">
+          <div class="stat-label">Faturamento Total</div>
+          <div class="stat-value" style="font-size: 1.4rem; color: var(--accent-cyan);" id="fin-faturamento">R$ 0,00</div>
+          <div class="stat-desc">Venda de peças + mão de obra</div>
+        </div>
+        <div class="finance-item">
+          <div class="stat-label">Custo de Peças</div>
+          <div class="stat-value" style="font-size: 1.4rem; color: var(--text-muted);" id="fin-custo">R$ 0,00</div>
+          <div class="stat-desc">Custo desembolsado</div>
+        </div>
+        <div class="finance-item">
+          <div class="stat-label">Impostos Provisionados</div>
+          <div class="stat-value" style="font-size: 1.4rem; color: var(--accent-warning);" id="fin-impostos">R$ 0,00</div>
+          <div class="stat-desc">Alíquota configurada</div>
+        </div>
+        <div class="finance-item" style="border-color: var(--accent-success); background: rgba(16, 185, 129, 0.08);">
+          <div class="stat-label" style="color: var(--accent-success);">Lucro Líquido Real</div>
+          <div class="stat-value" style="font-size: 1.4rem; color: var(--accent-success);" id="fin-lucro">R$ 0,00</div>
+          <div class="stat-desc">Sua margem real no bolso</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Radar de Retorno (Pós-Venda Automático) -->
+    <section class="radar-box" id="radar-section" style="display: none;">
+      <div class="radar-header">
+        <span>🔔</span>
+        <span>RADAR DE RETORNO (Pendências e Itens Recusados Vencendo o Prazo)</span>
+      </div>
+      <div class="radar-list" id="radar-items-container">
+        <!-- Itens injetados via JS -->
+      </div>
+    </section>
+
+    <!-- Pátio Kanban -->
+    <section>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h2 style="font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+          <span>🚘</span> Fluxo Visual do Pátio
+        </h2>
+        <span style="font-size: 0.8rem; color: var(--text-secondary);">Arraste ou clique para avançar a OS</span>
+      </div>
+
+      <div class="kanban-board">
+        <!-- Coluna 1: Agendado -->
+        <div class="kanban-col" data-status="agendado">
+          <div class="kanban-header">
+            <span>📅 Agendado</span>
+            <span class="col-count" id="count-agendado">0</span>
+          </div>
+          <div class="kanban-cards" id="cards-agendado"></div>
+        </div>
+
+        <!-- Coluna 2: Diagnóstico -->
+        <div class="kanban-col" data-status="diagnostico">
+          <div class="kanban-header">
+            <span>🔬 Em Diagnóstico</span>
+            <span class="col-count" id="count-diagnostico">0</span>
+          </div>
+          <div class="kanban-cards" id="cards-diagnostico"></div>
+        </div>
+
+        <!-- Coluna 3: Aguardando -->
+        <div class="kanban-col" data-status="aguardando">
+          <div class="kanban-header">
+            <span>⏳ Aguardando Aprovação / Peça</span>
+            <span class="col-count" id="count-aguardando">0</span>
+          </div>
+          <div class="kanban-cards" id="cards-aguardando"></div>
+        </div>
+
+        <!-- Coluna 4: Execução -->
+        <div class="kanban-col" data-status="execucao">
+          <div class="kanban-header">
+            <span>🛠️ Em Execução</span>
+            <span class="col-count" id="count-execucao">0</span>
+          </div>
+          <div class="kanban-cards" id="cards-execucao"></div>
+        </div>
+
+        <!-- Coluna 5: Pronto -->
+        <div class="kanban-col" data-status="pronto">
+          <div class="kanban-header">
+            <span>✅ Pronto p/ Retirada</span>
+            <span class="col-count" id="count-pronto">0</span>
+          </div>
+          <div class="kanban-cards" id="cards-pronto"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: NOVA ENTRADA / OS RÁPIDA (ZERO BUROCRACIA) -->
+  <div class="modal-overlay" id="modal-nova-os" style="display: none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 700;">🚀 Entrada Rápida de Veículo</h3>
+        <button class="btn btn-secondary btn-icon btn-sm" onclick="fecharModalNovaOS()">✕</button>
+      </div>
+      <form id="form-nova-os">
+        <div class="modal-body">
+          <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid var(--accent-primary); border-radius: var(--radius-md); padding: 12px; margin-bottom: 6px;">
+            <label class="form-label" style="color: var(--accent-primary);">1. Placa do Veículo (Busca Automática)</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <input type="text" id="nova-placa" class="form-input" style="font-size: 1.3rem; font-weight: 800; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 2px;" placeholder="Ex: ABC1234 ou BRA2E19" required autocomplete="off">
+              <span id="placa-status-badge" style="font-size: 0.8rem; color: var(--text-secondary);">Digite para buscar</span>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Modelo / Ano / Versão</label>
+              <input type="text" id="nova-modelo" class="form-input" placeholder="Ex: Gol G5 1.6 2012" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">KM Atual de Entrada</label>
+              <input type="number" id="nova-km" class="form-input" placeholder="Ex: 85400" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nome do Cliente</label>
+              <input type="text" id="nova-cliente-nome" class="form-input" placeholder="Nome completo ou apelido" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">WhatsApp do Cliente</label>
+              <input type="text" id="nova-cliente-tel" class="form-input" placeholder="Ex: 11988887777" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Queixa Principal / Relato do Cliente</label>
+            <textarea id="nova-queixa" class="form-textarea" rows="2" placeholder="Ex: Barulho na suspensão dianteira ao passar em lombadas e falhamento leve pela manhã..."></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Chassi / VIN (Opcional)</label>
+              <input type="text" id="nova-chassi" class="form-input" placeholder="Opcional">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Status Inicial no Pátio</label>
+              <select id="nova-status" class="form-select">
+                <option value="diagnostico" selected>🔬 Em Diagnóstico</option>
+                <option value="agendado">📅 Agendado</option>
+                <option value="execucao">🛠️ Em Execução Direta</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="fecharModalNovaOS()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Abrir Ordem de Serviço & Ficha Técnica ➔</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIGURAÇÕES DA OFICINA -->
+  <div class="modal-overlay" id="modal-config" style="display: none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 700;">⚙️ Configurações da Oficina & Parâmetros Fiscais</h3>
+        <button class="btn btn-secondary btn-icon btn-sm" onclick="fecharModalConfig()">✕</button>
+      </div>
+      <form id="form-config">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Nome da Oficina (Aparece no Laudo do Cliente)</label>
+            <input type="text" id="cfg-nome" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">WhatsApp Oficial da Oficina</label>
+            <input type="text" id="cfg-whats" class="form-input" placeholder="Ex: 11988889999">
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid var(--accent-success); border-radius: var(--radius-md); padding: 14px;">
+            <div style="font-weight: 700; color: var(--accent-success); margin-bottom: 8px;">Cálculo Reverso com Imposto Embutido (Markup Divisor)</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Alíquota Imposto Peças (%)</label>
+                <input type="number" step="0.1" id="cfg-imp-peca" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Alíquota Imposto Serviços (%)</label>
+                <input type="number" step="0.1" id="cfg-imp-servico" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Margem Líquida Padrão (%)</label>
+                <input type="number" step="0.1" id="cfg-margem-padrao" class="form-input" required>
+              </div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px;">
+              Fórmula aplicada automaticamente: <code>Preço = Custo / (1 - ((Margem + Imposto) / 100))</code>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="fecharModalConfig()">Fechar</button>
+          <button type="submit" class="btn btn-success">Salvar Configurações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: RESULTADOS DA BUSCA GLOBAL -->
+  <div class="modal-overlay" id="modal-busca-results" style="display: none;">
+    <div class="modal-container" style="max-width: 800px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 700;">🔍 Resultados da Busca</h3>
+        <button class="btn btn-secondary btn-icon btn-sm" onclick="fecharModalBusca()">✕</button>
+      </div>
+      <div class="modal-body" id="busca-results-container" style="max-height: 70vh;">
+        <!-- Lista de veículos e histórico -->
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    let appConfig = {};
+    let financeOculto = false;
+
+    async function initDashboard() {
+      try {
+        const stats = await API.get('/api/dashboard');
+        appConfig = stats.config;
+        document.getElementById('shop-name-display').innerText = appConfig.nome_oficina || 'Oficina Pro';
+
+        // Atualiza contadores do topo
+        document.getElementById('stat-total-patio').innerText = stats.patio.total;
+        document.getElementById('stat-diagnostico').innerText = stats.patio.diagnostico;
+        document.getElementById('stat-aguardando').innerText = stats.patio.aguardando;
+        document.getElementById('stat-execucao').innerText = stats.patio.execucao;
+        document.getElementById('stat-pronto').innerText = stats.patio.pronto;
+
+        // Atualiza financeiro
+        document.getElementById('fin-faturamento').innerText = Utils.formatCurrency(stats.financeiro.faturamento_bruto);
+        document.getElementById('fin-custo').innerText = Utils.formatCurrency(stats.financeiro.custo_pecas);
+        document.getElementById('fin-impostos').innerText = Utils.formatCurrency(stats.financeiro.impostos_provisionados);
+        document.getElementById('fin-lucro').innerText = Utils.formatCurrency(stats.financeiro.lucro_liquido_real);
+
+        // Radar de Retorno
+        const radarSec = document.getElementById('radar-section');
+        const radarContainer = document.getElementById('radar-items-container');
+        if (stats.radarRetorno && stats.radarRetorno.length > 0) {
+          radarSec.style.display = 'block';
+          radarContainer.innerHTML = stats.radarRetorno.map(item => {
+            const whatsLink = Utils.generateWhatsAppLink(
+              item.cliente_telefone, 
+              item.cliente_nome, 
+              item.placa, 
+              '', 
+              appConfig.nome_oficina
+            );
+            return `
+              <div class="radar-item">
+                <div>
+                  <div style="font-weight: 700; font-size: 0.9rem;">${item.placa} - ${item.modelo_ano}</div>
+                  <div style="font-size: 0.8rem; color: var(--text-secondary);">${item.cliente_nome} (${item.cliente_telefone})</div>
+                  <div style="font-size: 0.85rem; color: var(--accent-warning); margin-top: 4px;">⚠️ ${item.descricao_defeito}</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">Prazo sugerido de retorno: <strong>${Utils.formatDateSimple(item.data_prevista_retorno)}</strong></div>
+                </div>
+                <div>
+                  <a href="${whatsLink}" target="_blank" class="btn btn-success btn-sm" title="Chamar no WhatsApp">
+                    <span>💬</span> Chamar
+                  </a>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          radarSec.style.display = 'none';
+        }
+
+        // Renderiza Kanban
+        await renderKanban();
+
+      } catch (err) {
+        console.error('Erro ao carregar dashboard:', err);
+      }
+    }
+
+    async function renderKanban() {
+      const patio = await API.get('/api/patio');
+      const statusCols = ['agendado', 'diagnostico', 'aguardando', 'execucao', 'pronto'];
+
+      // Zera contadores e colunas
+      statusCols.forEach(st => {
+        document.getElementById(`count-${st}`).innerText = '0';
+        document.getElementById(`cards-${st}`).innerHTML = '';
+      });
+
+      const counts = { agendado: 0, diagnostico: 0, aguardando: 0, execucao: 0, pronto: 0 };
+
+      patio.forEach(os => {
+        const col = os.status_patio;
+        if (counts[col] !== undefined) {
+          counts[col]++;
+          const cardHtml = `
+            <div class="os-card" onclick="window.location.href='/os/${os.id}'" draggable="true" ondragstart="handleDragStart(event, '${os.id}')">
+              <div class="os-card-top">
+                <span class="os-num">OS #${String(os.numero_os).padStart(4, '0')}</span>
+                <span class="license-plate">
+                  <span class="plate-header">BRASIL</span>
+                  <span class="plate-number">${Utils.formatPlaca(os.placa)}</span>
+                </span>
+              </div>
+              <div class="os-vehicle-info">${os.modelo_ano}</div>
+              <div class="os-client-info">👤 ${os.cliente_nome} • ${Utils.formatKm(os.km_entrada)}</div>
+              
+              <div class="os-badges">
+                ${os.dtcs_ativos > 0 ? `<span class="badge badge-danger">⚡ ${os.dtcs_ativos} DTCs</span>` : ''}
+                ${os.total_evidencias > 0 ? `<span class="badge badge-blue">📸 ${os.total_evidencias} Fotos</span>` : ''}
+                ${os.pendencias_abertas > 0 ? `<span class="badge badge-warning">⚠️ ${os.pendencias_abertas} Pendências</span>` : ''}
+                ${os.aprovado_cliente_em ? `<span class="badge badge-success">✓ Aprovado Cliente</span>` : ''}
+              </div>
+
+              <div class="os-card-footer">
+                <span class="os-card-total">${Utils.formatCurrency(os.valor_total_os)}</span>
+                <div onclick="event.stopPropagation();">
+                  <select class="form-select btn-sm" style="padding: 2px 6px; font-size: 0.75rem;" onchange="mudarStatusOS('${os.id}', this.value)">
+                    <option value="agendado" ${col==='agendado'?'selected':''}>📅 Agendado</option>
+                    <option value="diagnostico" ${col==='diagnostico'?'selected':''}>🔬 Diagnóstico</option>
+                    <option value="aguardando" ${col==='aguardando'?'selected':''}>⏳ Aguardando</option>
+                    <option value="execucao" ${col==='execucao'?'selected':''}>🛠️ Execução</option>
+                    <option value="pronto" ${col==='pronto'?'selected':''}>✅ Pronto</option>
+                    <option value="entregue">🚗 Entregar Veículo</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          `;
+          document.getElementById(`cards-${col}`).insertAdjacentHTML('beforeend', cardHtml);
+        }
+      });
+
+      statusCols.forEach(st => {
+        document.getElementById(`count-${st}`).innerText = counts[st];
+      });
+
+      setupDropZones();
+    }
+
+    async function mudarStatusOS(id, novoStatus) {
+      try {
+        await API.patch(`/api/os/${id}/status`, { status: novoStatus });
+        initDashboard();
+      } catch (err) {
+        alert('Erro ao atualizar status: ' + err.message);
+      }
+    }
+
+    // Drag and Drop simples
+    let draggedOsId = null;
+    function handleDragStart(e, id) {
+      draggedOsId = id;
+      e.dataTransfer.setData('text/plain', id);
+    }
+    function setupDropZones() {
+      document.querySelectorAll('.kanban-col').forEach(col => {
+        col.ondragover = (e) => e.preventDefault();
+        col.ondrop = async (e) => {
+          e.preventDefault();
+          const targetStatus = col.dataset.status;
+          if (draggedOsId && targetStatus) {
+            await mudarStatusOS(draggedOsId, targetStatus);
+            draggedOsId = null;
+          }
+        };
+      });
+    }
+
+    // Ocultar / Mostrar Valores Financeiros
+    document.getElementById('btn-toggle-finance').onclick = () => {
+      financeOculto = !financeOculto;
+      const el = document.getElementById('finance-values-container');
+      const text = document.getElementById('eye-text');
+      const icon = document.getElementById('eye-icon');
+      if (financeOculto) {
+        el.classList.add('hidden-finance');
+        text.innerText = 'Mostrar Valores';
+        icon.innerText = '🙈';
+      } else {
+        el.classList.remove('hidden-finance');
+        text.innerText = 'Ocultar Valores';
+        icon.innerText = '👁️';
+      }
+    };
+
+    // Alternar Tema Claro / Escuro
+    document.getElementById('btn-toggle-theme').onclick = () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      const target = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', target);
+      localStorage.setItem('oficina_theme', target);
+    };
+    if (localStorage.getItem('oficina_theme') === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+
+    // Modal Nova OS
+    const modalNovaOS = document.getElementById('modal-nova-os');
+    document.getElementById('btn-nova-os').onclick = () => {
+      document.getElementById('form-nova-os').reset();
+      document.getElementById('placa-status-badge').innerText = 'Digite para buscar';
+      modalNovaOS.style.display = 'flex';
+      document.getElementById('nova-placa').focus();
+    };
+    function fecharModalNovaOS() {
+      modalNovaOS.style.display = 'none';
+    }
+
+    // Busca automática por placa na digitação
+    let searchTimeout = null;
+    document.getElementById('nova-placa').oninput = (e) => {
+      clearTimeout(searchTimeout);
+      const placa = e.target.value.trim().toUpperCase();
+      if (placa.length >= 7) {
+        document.getElementById('placa-status-badge').innerText = 'Buscando histórico...';
+        searchTimeout = setTimeout(async () => {
+          try {
+            const v = await API.get(`/api/veiculo/${placa}`);
+            if (v && !v.notFound) {
+              document.getElementById('placa-status-badge').innerHTML = '<strong style="color: var(--accent-success);">✓ Veículo já cadastrado!</strong>';
+              document.getElementById('nova-modelo').value = v.modelo_ano || '';
+              document.getElementById('nova-cliente-nome').value = v.cliente_nome || '';
+              document.getElementById('nova-cliente-tel').value = v.cliente_telefone || '';
+              document.getElementById('nova-chassi').value = v.chassi || '';
+            } else {
+              document.getElementById('placa-status-badge').innerHTML = '<span style="color: var(--accent-primary);">Novo veículo</span>';
+            }
+          } catch (_) {
+            document.getElementById('placa-status-badge').innerText = '';
+          }
+        }, 300);
+      }
+    };
+
+    document.getElementById('form-nova-os').onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        const payload = {
+          placa: document.getElementById('nova-placa').value,
+          modelo_ano: document.getElementById('nova-modelo').value,
+          km_entrada: document.getElementById('nova-km').value,
+          cliente_nome: document.getElementById('nova-cliente-nome').value,
+          cliente_telefone: document.getElementById('nova-cliente-tel').value,
+          queixa_cliente: document.getElementById('nova-queixa').value,
+          chassi: document.getElementById('nova-chassi').value,
+          status_patio: document.getElementById('nova-status').value
+        };
+        const nova = await API.post('/api/os', payload);
+        window.location.href = `/os/${nova.id}`;
+      } catch (err) {
+        alert('Erro ao criar OS: ' + err.message);
+      }
+    };
+
+    // Modal Configurações
+    const modalConfig = document.getElementById('modal-config');
+    document.getElementById('btn-open-config').onclick = async () => {
+      const cfg = await API.get('/api/config');
+      document.getElementById('cfg-nome').value = cfg.nome_oficina;
+      document.getElementById('cfg-whats').value = cfg.telefone_whatsapp || '';
+      document.getElementById('cfg-imp-peca').value = cfg.aliquota_imposto_peca;
+      document.getElementById('cfg-imp-servico').value = cfg.aliquota_imposto_servico;
+      document.getElementById('cfg-margem-padrao').value = cfg.margem_lucro_padrao;
+      modalConfig.style.display = 'flex';
+    };
+    function fecharModalConfig() {
+      modalConfig.style.display = 'none';
+    }
+    document.getElementById('form-config').onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        const payload = {
+          nome_oficina: document.getElementById('cfg-nome').value,
+          telefone_whatsapp: document.getElementById('cfg-whats').value,
+          aliquota_imposto_peca: document.getElementById('cfg-imp-peca').value,
+          aliquota_imposto_servico: document.getElementById('cfg-imp-servico').value,
+          margem_lucro_padrao: document.getElementById('cfg-margem-padrao').value
+        };
+        await API.post('/api/config', payload);
+        fecharModalConfig();
+        initDashboard();
+      } catch (err) {
+        alert('Erro ao salvar configurações: ' + err.message);
+      }
+    };
+
+    // Busca Global
+    const modalBusca = document.getElementById('modal-busca-results');
+    const inputBusca = document.getElementById('global-search-input');
+    let buscaTimer = null;
+
+    inputBusca.oninput = (e) => {
+      clearTimeout(buscaTimer);
+      const q = e.target.value.trim();
+      if (q.length < 2) return;
+      buscaTimer = setTimeout(async () => {
+        try {
+          const results = await API.get(`/api/busca?q=${encodeURIComponent(q)}`);
+          const container = document.getElementById('busca-results-container');
+          if (results.length === 0) {
+            container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted);">Nenhum veículo ou cliente encontrado para "${q}".</div>`;
+          } else {
+            container.innerHTML = `
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Placa</th>
+                    <th>Veículo</th>
+                    <th>Cliente</th>
+                    <th>Passagens</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${results.map(r => `
+                    <tr>
+                      <td>
+                        <span class="license-plate">
+                          <span class="plate-header">BRASIL</span>
+                          <span class="plate-number">${Utils.formatPlaca(r.placa)}</span>
+                        </span>
+                      </td>
+                      <td><strong>${r.modelo_ano}</strong></td>
+                      <td>${r.cliente_nome}<br><small style="color: var(--text-muted);">${r.cliente_telefone}</small></td>
+                      <td><span class="badge badge-blue">${r.total_passagens || 0} OS</span></td>
+                      <td>
+                        <button class="btn btn-primary btn-sm" onclick="abrirNovaOSParaVeiculo('${r.placa}', '${r.modelo_ano}', '${r.cliente_nome}', '${r.cliente_telefone}')">
+                          Nova OS ➔
+                        </button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            `;
+          }
+          modalBusca.style.display = 'flex';
+        } catch (err) {
+          console.error(err);
+        }
+      }, 350);
+    };
+
+    function fecharModalBusca() {
+      modalBusca.style.display = 'none';
+    }
+
+    function abrirNovaOSParaVeiculo(placa, modelo, cliente, telefone) {
+      fecharModalBusca();
+      document.getElementById('form-nova-os').reset();
+      document.getElementById('nova-placa').value = placa;
+      document.getElementById('nova-modelo').value = modelo;
+      document.getElementById('nova-cliente-nome').value = cliente;
+      document.getElementById('nova-cliente-tel').value = telefone;
+      modalNovaOS.style.display = 'flex';
+    }
+
+    // Inicialização
+    initDashboard();
+  </script>
+</body>
+</html>
