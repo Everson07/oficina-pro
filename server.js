@@ -3,11 +3,13 @@ const url = require('node:url');
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
-const repo = require('./db.js');
+const repo = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? require('./db-supabase.js')
+  : require('./db.js');
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const UPLOADS_DIR = repo.uploadsDir;
+const UPLOADS_DIR = repo.uploadsDir || path.join(__dirname, 'uploads');
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -95,28 +97,28 @@ const server = http.createServer(async (req, res) => {
 
     // Configurações
     if (pathname === '/api/config' && method === 'GET') {
-      return sendJSON(res, 200, repo.getConfig());
+      return sendJSON(res, 200, await repo.getConfig());
     }
     if (pathname === '/api/config' && method === 'POST') {
       const body = await parseBody(req);
-      const updated = repo.updateConfig(body);
+      const updated = await repo.updateConfig(body);
       return sendJSON(res, 200, updated);
     }
 
     // Dashboard & Estatísticas
     if (pathname === '/api/dashboard' && method === 'GET') {
-      return sendJSON(res, 200, repo.getDashboardStats());
+      return sendJSON(res, 200, await repo.getDashboardStats());
     }
 
     // Pátio / Kanban
     if (pathname === '/api/patio' && method === 'GET') {
-      return sendJSON(res, 200, repo.listPatio());
+      return sendJSON(res, 200, await repo.listPatio());
     }
 
     // Busca Global
     if (pathname === '/api/busca' && method === 'GET') {
       const q = parsedUrl.query.q || '';
-      return sendJSON(res, 200, repo.searchVeiculosEClientes(q));
+      return sendJSON(res, 200, await repo.searchVeiculosEClientes(q));
     }
 
     // Busca de Veículo por Placa
@@ -124,16 +126,16 @@ const server = http.createServer(async (req, res) => {
       const parts = pathname.split('/');
       const placaOuId = parts[3];
       if (parts[4] === 'historico') {
-        return sendJSON(res, 200, repo.listHistoricoVeiculo(placaOuId));
+        return sendJSON(res, 200, await repo.listHistoricoVeiculo(placaOuId));
       }
-      const veiculo = repo.getVeiculoByPlaca(placaOuId);
+      const veiculo = await repo.getVeiculoByPlaca(placaOuId);
       return sendJSON(res, 200, veiculo || { notFound: true });
     }
 
     // Ordens de Serviço
     if (pathname === '/api/os' && method === 'POST') {
       const body = await parseBody(req);
-      const novaOS = repo.createOS(body);
+      const novaOS = await repo.createOS(body);
       return sendJSON(res, 201, novaOS);
     }
 
@@ -145,14 +147,14 @@ const server = http.createServer(async (req, res) => {
       // Atualizar status no Kanban
       if (subAction === 'status' && method === 'PATCH') {
         const body = await parseBody(req);
-        const updated = repo.updateOSStatus(osId, body.status);
+        const updated = await repo.updateOSStatus(osId, body.status);
         return sendJSON(res, 200, updated);
       }
 
       // DTCs
       if (subAction === 'dtc' && method === 'POST') {
         const body = await parseBody(req);
-        const dtc = repo.addDTC(osId, body);
+        const dtc = await repo.addDTC(osId, body);
         return sendJSON(res, 201, dtc);
       }
 
@@ -161,7 +163,9 @@ const server = http.createServer(async (req, res) => {
         const body = await parseBody(req);
         let storagePath = '';
 
-        if (body.base64Image) {
+        if (body.base64Image && repo.isSupabase) {
+          storagePath = await repo.uploadEvidence(body.base64Image);
+        } else if (body.base64Image) {
           // Salva imagem a partir de base64 vindo da câmera / arquivo comprimido
           const matches = body.base64Image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
           if (matches && matches.length === 3) {
@@ -174,7 +178,7 @@ const server = http.createServer(async (req, res) => {
           }
         }
 
-        const ev = repo.addEvidencia(osId, body.veiculo_id, {
+        const ev = await repo.addEvidencia(osId, body.veiculo_id, {
           categoria: body.categoria,
           momento: body.momento,
           titulo_observacao: body.titulo_observacao,
@@ -187,20 +191,20 @@ const server = http.createServer(async (req, res) => {
       // Itens Financeiros com Markup Divisor
       if (subAction === 'item' && method === 'POST') {
         const body = await parseBody(req);
-        const item = repo.addItemFinanceiro(osId, body);
+        const item = await repo.addItemFinanceiro(osId, body);
         return sendJSON(res, 201, item);
       }
 
       // Pendências
       if (subAction === 'pendencia' && method === 'POST') {
         const body = await parseBody(req);
-        const pend = repo.addPendencia(osId, body.veiculo_id, body);
+        const pend = await repo.addPendencia(osId, body.veiculo_id, body);
         return sendJSON(res, 201, pend);
       }
 
       // Obter OS Completa
       if (!subAction && method === 'GET') {
-        const os = repo.getOSById(osId);
+        const os = await repo.getOSById(osId);
         if (!os) return sendJSON(res, 404, { error: 'OS não encontrada' });
         return sendJSON(res, 200, os);
       }
@@ -208,7 +212,7 @@ const server = http.createServer(async (req, res) => {
       // Atualizar dados gerais da OS
       if (!subAction && method === 'PUT') {
         const body = await parseBody(req);
-        const updated = repo.updateOS(osId, body);
+        const updated = await repo.updateOS(osId, body);
         return sendJSON(res, 200, updated);
       }
     }
@@ -216,21 +220,21 @@ const server = http.createServer(async (req, res) => {
     // Deletar DTC
     if (pathname.startsWith('/api/dtc/') && method === 'DELETE') {
       const id = pathname.split('/')[3];
-      repo.deleteDTC(id);
+      await repo.deleteDTC(id);
       return sendJSON(res, 200, { success: true });
     }
 
     // Deletar Evidência
     if (pathname.startsWith('/api/evidencia/') && method === 'DELETE') {
       const id = pathname.split('/')[3];
-      repo.deleteEvidencia(id);
+      await repo.deleteEvidencia(id);
       return sendJSON(res, 200, { success: true });
     }
 
     // Deletar Item Financeiro
     if (pathname.startsWith('/api/item/') && method === 'DELETE') {
       const id = pathname.split('/')[3];
-      repo.deleteItemFinanceiro(id);
+      await repo.deleteItemFinanceiro(id);
       return sendJSON(res, 200, { success: true });
     }
 
@@ -238,7 +242,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname.startsWith('/api/pendencia/') && method === 'PATCH') {
       const id = pathname.split('/')[3];
       const body = await parseBody(req);
-      const resPend = repo.toggleResolverPendencia(id, body.resolvido);
+      const resPend = await repo.toggleResolverPendencia(id, body.resolvido);
       return sendJSON(res, 200, resPend);
     }
 
@@ -246,12 +250,12 @@ const server = http.createServer(async (req, res) => {
     if (pathname.startsWith('/api/portal/')) {
       const token = pathname.split('/')[3];
       if (method === 'GET') {
-        const portalData = repo.getPortalCliente(token);
+        const portalData = await repo.getPortalCliente(token);
         if (!portalData) return sendJSON(res, 404, { error: 'Prontuário não encontrado' });
         return sendJSON(res, 200, portalData);
       }
       if (method === 'POST') {
-        const portalData = repo.aprovarOrcamentoCliente(token);
+        const portalData = await repo.aprovarOrcamentoCliente(token);
         if (!portalData) return sendJSON(res, 404, { error: 'Erro ao aprovar' });
         return sendJSON(res, 200, portalData);
       }

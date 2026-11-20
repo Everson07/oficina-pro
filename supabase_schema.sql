@@ -5,6 +5,7 @@
 
 -- Habilita extensão para UUIDs
 create extension if not exists "uuid-ossp";
+create extension if not exists "pgcrypto";
 
 -- 1. TABELA DE CONFIGURAÇÕES
 create table if not exists public.configuracoes (
@@ -90,6 +91,7 @@ create table if not exists public.os_itens_financeiros (
     os_id uuid references public.ordens_servico(id) on delete cascade not null,
     tipo text not null check (tipo in ('peca', 'servico')),
     origem text not null default 'oficina' check (origem in ('oficina', 'cliente')),
+    modalidade_cobranca text not null default 'padrao' check (modalidade_cobranca in ('padrao', 'taxa_diagnostico', 'incluso_diagnostico', 'abatimento_diagnostico')),
     descricao text not null,
     quantidade numeric(10,2) not null default 1.0,
     custo_compra_unitario numeric(10,2) not null default 0.0,
@@ -134,3 +136,8 @@ select
 from public.ordens_servico os
 join public.veiculos v on os.veiculo_id = v.id
 cross join public.configuracoes c;
+
+-- 9. ARMAZENAMENTO PERMANENTE DAS FOTOS
+insert into storage.buckets (id, name, public)
+values ('evidencias', 'evidencias', true)
+on conflict (id) do update set public = excluded.public;
