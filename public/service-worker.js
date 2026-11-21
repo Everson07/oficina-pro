@@ -2,7 +2,7 @@ const CACHE_NAME = 'oficina-pro-v2';
 const APP_SHELL = [
   '/',
   '/index.html',
-  '/os-ficha-v3.html',
+  '/os-ficha-v3',
   '/cliente.html',
   '/laudo.html',
   '/css/style.css',
