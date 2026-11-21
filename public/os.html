@@ -636,7 +636,12 @@
 
   <script src="/js/app.js"></script>
   <script>
-    const osId = window.location.pathname.split('/').pop();
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    const osId = pathParts[0] === 'os' ? pathParts[1] : pathParts[pathParts.length - 1];
+    if (!osId || osId === 'os') {
+      window.location.replace('/');
+      throw new Error('Ficha de OS sem identificador');
+    }
     let currentOS = null;
     let appConfig = null;
 
