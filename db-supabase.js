@@ -1,10 +1,11 @@
 const crypto = require('node:crypto');
 const { createClient } = require('@supabase/supabase-js');
-const WebSocket = require('ws');
+const runtimeEnv = globalThis.__OFICINA_ENV || (typeof process !== 'undefined' ? process.env : {});
+const WebSocketTransport = typeof globalThis.WebSocket !== 'undefined' ? globalThis.WebSocket : require('ws');
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+const supabase = createClient(runtimeEnv.SUPABASE_URL, runtimeEnv.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
-  realtime: { transport: WebSocket }
+  realtime: { transport: WebSocketTransport }
 });
 
 const STORAGE_BUCKET = 'evidencias';
