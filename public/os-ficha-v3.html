@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/oficina-pro-192.svg" type="image/svg+xml">
+  <title>Prontuário Técnico da OS - Oficina Pro</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .os-nav-tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+      padding-bottom: 4px;
+      border-bottom: 2px solid var(--border-color);
+    }
+    .os-tab-btn {
+      padding: 10px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-bottom: none;
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .os-tab-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+    }
+    .os-tab-btn.active {
+      background: var(--accent-primary);
+      color: #ffffff;
+      border-color: var(--accent-primary);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .quick-dtc-chip {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 6px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+    }
+    .chip-ativo {
+      border-color: var(--accent-danger);
+      color: var(--accent-danger);
+      background: rgba(239, 68, 68, 0.1);
+    }
+    .chip-passado {
+      border-color: var(--text-muted);
+      color: var(--text-secondary);
+    }
+    .tarefa-inclusa-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: var(--radius-sm);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar OS -->
+  <header class="app-header">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <a href="/" class="btn btn-secondary btn-sm">⬅ Pátio</a>
+      <span class="os-num" style="font-size: 1.1rem; color: #fff;" id="os-numero-title">OS #0000</span>
+      <span class="license-plate" id="header-plate">
+        <span class="plate-header">BRASIL</span>
+        <span class="plate-number" id="header-plate-num">ABC1234</span>
+      </span>
+      <span id="veiculo-modelo-title" style="font-weight: 600; color: var(--text-secondary);"></span>
+    </div>
+
+    <div class="header-actions">
+      <!-- Status no Pátio -->
+      <select id="os-status-select" class="form-select" style="font-weight: 700; padding: 6px 12px;">
+        <option value="agendado">📅 Agendado</option>
+        <option value="diagnostico">🔬 Em Diagnóstico</option>
+        <option value="aguardando">⏳ Aguardando Aprovação / Peça</option>
+        <option value="execucao">🛠️ Em Execução</option>
+        <option value="pronto">✅ Pronto p/ Retirada</option>
+        <option value="entregue">🚗 Entregue / Finalizado</option>
+        <option value="cancelado">❌ Cancelado</option>
+      </select>
+
+      <!-- Compartilhar com Cliente -->
+      <a id="btn-share-whatsapp" href="#" target="_blank" class="btn btn-success">
+        <span>💬</span> <strong>WhatsApp</strong>
+      </a>
+      <button class="btn btn-secondary btn-icon" id="btn-copy-link" title="Copiar Link Público">🔗</button>
+
+      <!-- Gerar PDF / Imprimir -->
+      <button class="btn btn-primary" onclick="imprimirOSPDF()" title="Imprimir Ordem de Serviço ou Salvar em PDF" style="background: #2563eb;">
+        <span>📄</span> <strong>Gerar PDF / Imprimir</strong>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Banner de Pronto para Retirada / PDF -->
+    <div id="banner-pronto-pdf" style="display: none; background: rgba(16, 185, 129, 0.12); border: 2px solid var(--accent-success); border-radius: var(--radius-lg); padding: 14px 20px; margin-bottom: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <strong style="color: var(--accent-success); font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+          <span>✅</span> VEÍCULO PRONTO PARA RETIRADA!
+        </strong>
+        <span style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 3px; display: block;">
+          Serviços concluídos. Gere o PDF da Ordem de Serviço / Laudo Técnico de Entrega para imprimir ou enviar ao cliente.
+        </span>
+      </div>
+      <div>
+        <button class="btn btn-success" onclick="imprimirOSPDF()" style="font-size: 1rem; padding: 10px 22px; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">
+          <span>📄</span> <strong>Imprimir / Salvar PDF da OS</strong>
+        </button>
+      </div>
+    </div>
+
+    <!-- Card Resumo do Veículo e Cliente -->
+    <div class="section-card" style="margin-bottom: 16px; padding: 14px 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Cliente</span>
+          <div style="font-weight: 700; font-size: 1.05rem;" id="info-cliente-nome">-</div>
+          <div style="font-size: 0.85rem; color: var(--text-secondary);" id="info-cliente-tel">-</div>
+        </div>
+        <div>
+          <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Quilometragem</span>
+          <div style="font-weight: 700; font-size: 1.05rem;" id="info-km">-</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);" id="info-data-entrada">-</div>
+        </div>
+        <div>
+          <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Chassi (VIN)</span>
+          <div style="font-family: var(--font-mono); font-size: 0.9rem;" id="info-chassi">-</div>
+        </div>
+        <div>
+          <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Total da OS</span>
+          <div style="font-weight: 800; font-size: 1.25rem; color: var(--accent-success);" id="info-total-os">R$ 0,00</div>
+          <div id="info-aprovacao-status"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navegação em Abas (Tabs) -->
+    <nav class="os-nav-tabs">
+      <button class="os-tab-btn active" onclick="switchTab('tab-diagnostico')">🔬 Diagnóstico & DTCs</button>
+      <button class="os-tab-btn" onclick="switchTab('tab-vistoria')">📸 Vistoria de Recepção</button>
+      <button class="os-tab-btn" onclick="switchTab('tab-orcamento')">💰 Diagnóstico, Mão de Obra & Peças (ME)</button>
+      <button class="os-tab-btn" onclick="switchTab('tab-pendencias')">⚠️ Pendências & Pós-Venda</button>
+      <button class="os-tab-btn" onclick="switchTab('tab-historico')">📜 Linha do Tempo / Prontuário</button>
+    </nav>
+
+    <!-- ===================================================================== -->
+    <!-- ABA 1: DIAGNÓSTICO TÉCNICO & DTCs -->
+    <!-- ===================================================================== -->
+    <div id="tab-diagnostico" class="tab-content active">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+        <!-- Queixa do Cliente -->
+        <div class="section-card" style="margin-bottom: 0;">
+          <div class="section-header">
+            <span class="section-title"><span>🗣️</span> Queixa do Cliente</span>
+          </div>
+          <textarea id="diag-queixa" class="form-textarea" rows="4" style="width: 100%;" placeholder="Relato inicial do cliente..."></textarea>
+          <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="salvarNotasQueixa()">Salvar Relato</button>
+          </div>
+        </div>
+
+        <!-- Notas Técnicas de Bancada -->
+        <div class="section-card" style="margin-bottom: 0;">
+          <div class="section-header">
+            <span class="section-title"><span>📝</span> Notas de Bancada (Testes Técnicos)</span>
+          </div>
+          <textarea id="diag-notas" class="form-textarea" rows="4" style="width: 100%;" placeholder="Pressão de linha, queda de tensão, estanqueidade, teste de vácuo, conclusões técnicas..."></textarea>
+          <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+            <button class="btn btn-primary btn-sm" onclick="salvarNotasQueixa()">Salvar Notas</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Códigos de Falha (DTC) -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title"><span>⚡</span> Registro de Códigos de Falha (DTC / Scanner)</span>
+          <button class="btn btn-primary btn-sm" onclick="abrirModalDTC()">➕ Inserir DTC</button>
+        </div>
+        <div id="dtc-container" style="display: flex; flex-wrap: wrap; gap: 10px;">
+          <!-- DTCs injetados -->
+        </div>
+      </div>
+
+      <!-- Galeria Técnica (Osciloscópio, Scanner, Inspeção) -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title"><span>📊</span> Galeria Técnica Categorizada (Osciloscópio / Scanner / Sinais)</span>
+          <div>
+            <input type="file" id="input-foto-tecnica" accept="image/*" style="display: none;" onchange="handleUploadFotoTecnica(event)">
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('input-foto-tecnica').click()">
+              📷 Capturar / Carregar Imagem Técnica
+            </button>
+          </div>
+        </div>
+        <div class="evidence-grid" id="galeria-tecnica-container">
+          <!-- Fotos de osciloscópio / scanner -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- ABA 2: VISTORIA FOTOGRÁFICA DE RECEPÇÃO -->
+    <!-- ===================================================================== -->
+    <div id="tab-vistoria" class="tab-content">
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="section-title"><span>🛡️</span> Checklist & Respaldo Fotográfico de Entrada</span>
+            <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">
+              Fotos registradas com carimbo de data/hora no pátio para evitar reclamações indevidas.
+            </span>
+          </div>
+          <div>
+            <input type="file" id="input-foto-vistoria" accept="image/*" capture="environment" style="display: none;" onchange="handleUploadVistoria(event)">
+            <button class="btn btn-success" onclick="document.getElementById('input-foto-vistoria').click()">
+              📸 Tirar Foto da Entrada
+            </button>
+          </div>
+        </div>
+
+        <div class="evidence-grid" id="galeria-vistoria-container">
+          <!-- Imagens da vistoria -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- ABA 3: DIAGNÓSTICO, MÃO DE OBRA & PEÇAS (OFICINA ME) -->
+    <!-- ===================================================================== -->
+    <div id="tab-orcamento" class="tab-content">
+
+      <!-- ============================================================== -->
+      <!-- BLOCO 1: DIAGNÓSTICO TÉCNICO & TAREFAS INCLUSAS (VALOR FIXO) -->
+      <!-- ============================================================== -->
+      <div class="section-card" style="border: 1px solid var(--accent-cyan); background: linear-gradient(180deg, rgba(6, 182, 212, 0.08), rgba(30, 41, 59, 1));">
+        <div class="section-header" style="border-color: rgba(6, 182, 212, 0.3);">
+          <div>
+            <span class="section-title" style="color: var(--accent-cyan);">
+              <span>🔬</span> Taxa Única de Diagnóstico & Serviços Inclusos
+            </span>
+            <span style="font-size: 0.8rem; color: var(--text-secondary); display: block;">
+              Valor cobrado para achar o defeito. Todos os reparos simples adicionados aqui ficam <strong>R$ 0,00 adicional</strong>, mantendo o total da taxa fixo (ex: R$ 300,00).
+            </span>
+          </div>
+          <div id="diag-badge-status">
+            <!-- Injetado via JS -->
+          </div>
+        </div>
+
+        <!-- Linha 1: Definir ou Alterar a Taxa do Diagnóstico -->
+        <form id="form-taxa-diagnostico" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 14px;">
+          <div class="form-row" style="align-items: flex-end;">
+            <div class="form-group" style="flex: 2;">
+              <label class="form-label">Descrição da Taxa de Diagnóstico</label>
+              <input type="text" id="taxa-diag-desc" class="form-input" value="Diagnóstico Técnico Especializado de Bancada" required>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label" style="color: var(--accent-cyan); font-weight: 700;">Valor da Taxa (R$)</label>
+              <input type="number" step="0.01" id="taxa-diag-valor" class="form-input" value="300.00" style="font-size: 1.15rem; font-weight: 800; border-color: var(--accent-cyan);" required oninput="calcularLiveTaxaDiag()">
+            </div>
+            <div class="form-group" style="flex: 0.8;">
+              <label class="form-label">Imposto ME (Anexo III %)</label>
+              <input type="number" step="0.1" id="taxa-diag-imposto" class="form-input" value="6.0" required oninput="calcularLiveTaxaDiag()">
+            </div>
+            <div class="form-group" style="flex: 1.2;">
+              <button type="submit" class="btn btn-primary" style="width: 100%; height: 42px;">
+                <span id="btn-salvar-diag-text">💾 Fixar Taxa de Diagnóstico</span>
+              </button>
+            </div>
+          </div>
+          <div id="preview-taxa-diag" style="margin-top: 8px; font-size: 0.85rem; color: var(--text-secondary);"></div>
+        </form>
+
+        <!-- Linha 2: Adicionar Tarefas / Serviços Inclusos Dentro do Diagnóstico -->
+        <div style="background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.4); border-radius: var(--radius-md); padding: 14px;">
+          <label class="form-label" style="color: var(--accent-success); font-weight: 700;">
+            🟢 Adicionar Tarefa / Reparo Simples Executado DENTRO deste Diagnóstico (R$ 0,00 adicional)
+          </label>
+          <form id="form-tarefa-inclusa" style="display: flex; gap: 10px; margin-top: 6px;">
+            <input type="text" id="tarefa-inclusa-desc" class="form-input" style="flex: 1;" placeholder="Ex: troca do fusível da bomba, troca da bobina teste, reparo no conector, limpeza..." required>
+            <button type="submit" class="btn btn-success" style="white-space: nowrap;">
+              <span>➕</span> Incluir no Diagnóstico (R$ 0,00)
+            </button>
+          </form>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">
+            Você pode adicionar 1, 6 ou 10 tarefas aqui: todas continuam dentro do valor dos R$ 300,00 sem cobrar nada a mais do cliente!
+          </div>
+
+          <!-- Lista de Tarefas Inclusas -->
+          <div id="lista-tarefas-inclusas" style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
+            <!-- Itens de tarefas inclusas -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- BLOCO 2: MÃO DE OBRA ADICIONAL / REPARO PESADO (Cobrado à Parte) -->
+      <!-- ============================================================== -->
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="section-title"><span>🛠️</span> Mão de Obra Adicional / Reparo Pesado (Cobrado à Parte)</span>
+            <span style="font-size: 0.8rem; color: var(--text-secondary); display: block;">
+              Para serviços que vão além do diagnóstico simples (ex: Troca de bomba de combustível, troca de correia, suspensão).
+            </span>
+          </div>
+        </div>
+
+        <form id="form-servico-extra">
+          <div class="form-row" style="align-items: flex-end;">
+            <div class="form-group" style="flex: 2;">
+              <label class="form-label">Descrição da Mão de Obra</label>
+              <input type="text" id="extra-servico-desc" class="form-input" placeholder="Ex: Substituição da Bomba de Combustível + Limpeza de Tanque" required>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label" style="color: var(--accent-success); font-weight: 700;">Valor do Serviço (R$)</label>
+              <input type="number" step="0.01" id="extra-servico-valor" class="form-input" placeholder="Ex: 450.00" style="font-size: 1.15rem; font-weight: 800; border-color: var(--accent-success);" required oninput="calcularLiveExtraServico()">
+            </div>
+            <div class="form-group" style="flex: 0.8;">
+              <label class="form-label">Imposto ME (%)</label>
+              <input type="number" step="0.1" id="extra-servico-imp" class="form-input" value="6.0" oninput="calcularLiveExtraServico()">
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <button type="submit" class="btn btn-primary" style="width: 100%; height: 42px;">
+                <span>➕</span> Inserir Mão de Obra
+              </button>
+            </div>
+          </div>
+          <div id="preview-extra-servico" style="margin-top: 8px; font-size: 0.85rem; color: var(--text-secondary);"></div>
+        </form>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- BLOCO 3: PEÇAS & INSUMOS APLICADOS -->
+      <!-- ============================================================== -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title"><span>📦</span> Peças & Insumos Aplicados</span>
+        </div>
+
+        <form id="form-peca">
+          <div class="form-row">
+            <div class="form-group" style="flex: 2;">
+              <label class="form-label">Descrição da Peça</label>
+              <input type="text" id="peca-descricao" class="form-input" placeholder="Ex: Bobina de Ignição Bosch ou Bomba de Combustível" required>
+            </div>
+            <div class="form-group" style="flex: 1.5;">
+              <label class="form-label">Origem da Peça</label>
+              <select id="peca-origem" class="form-select" onchange="atualizarOrigemPeca()">
+                <option value="oficina">🏢 Fornecida pela Oficina (com Margem & Imposto)</option>
+                <option value="cliente">👤 Trazida pelo Cliente (R$ 0,00)</option>
+              </select>
+            </div>
+            <div class="form-group" style="max-width: 90px;">
+              <label class="form-label">Qtd</label>
+              <input type="number" step="0.5" id="peca-qtd" class="form-input" value="1" required oninput="calcularLivePeca()">
+            </div>
+          </div>
+
+          <div class="form-row" id="row-peca-financeiro" style="margin-top: 12px; align-items: flex-end;">
+            <div class="form-group">
+              <label class="form-label">Custo da Peça (R$)</label>
+              <input type="number" step="0.01" id="peca-custo" class="form-input" placeholder="0.00" oninput="calcularLivePeca()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Margem Líquida (%)</label>
+              <input type="number" step="0.1" id="peca-margem" class="form-input" placeholder="30" oninput="calcularLivePeca()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Imposto ME Peças (%)</label>
+              <input type="number" step="0.1" id="peca-imposto" class="form-input" placeholder="6" oninput="calcularLivePeca()">
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="color: var(--accent-success); font-weight: 700;">Preço Venda Unit. (R$)</label>
+              <input type="number" step="0.01" id="peca-preco-venda" class="form-input" style="font-weight: 800; border-color: var(--accent-success);">
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <button type="submit" class="btn btn-primary" style="width: 100%; height: 42px;">
+                <span>➕</span> Inserir Peça
+              </button>
+            </div>
+          </div>
+
+          <div id="preview-peca-markup" style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: var(--radius-md); padding: 12px; margin-top: 12px; font-size: 0.9rem;">
+          </div>
+        </form>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- TABELA GERAL DE COMPOSIÇÃO DA OS -->
+      <!-- ============================================================== -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title"><span>📋</span> Composição Geral do Orçamento</span>
+        </div>
+
+        <!-- Seção 1: Diagnóstico e Tarefas Inclusas -->
+        <div style="margin-bottom: 24px;">
+          <h4 style="font-size: 1rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+            <span>🔬</span> 1. Bloco do Diagnóstico Técnico (Taxa Fixa & Tarefas Inclusas)
+          </h4>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Descrição</th>
+                  <th>Modalidade</th>
+                  <th>Imposto ME Provisionado</th>
+                  <th>Líquido Oficina</th>
+                  <th style="text-align: right;">Total Cliente</th>
+                  <th style="text-align: center;">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-diag-os">
+                <!-- Injetado via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Seção 2: Serviços Extras / Pesados -->
+        <div style="margin-bottom: 24px;">
+          <h4 style="font-size: 1rem; color: var(--accent-purple); display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+            <span>🛠️</span> 2. Mão de Obra Adicional / Reparos Pesados
+          </h4>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Descrição do Serviço</th>
+                  <th>Imposto ME (6%)</th>
+                  <th>Líquido Oficina</th>
+                  <th style="text-align: right;">Total Cliente</th>
+                  <th style="text-align: center;">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-servicos-extras-os">
+                <!-- Injetado via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Seção 3: Peças -->
+        <div>
+          <h4 style="font-size: 1rem; color: var(--accent-primary); display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+            <span>📦</span> 3. Peças & Insumos Aplicados
+          </h4>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Descrição da Peça</th>
+                  <th>Origem</th>
+                  <th>Qtd</th>
+                  <th>Custo Unit. (Sigilo)</th>
+                  <th>Margem Real</th>
+                  <th>Imposto ME</th>
+                  <th style="text-align: right;">Total Cliente</th>
+                  <th style="text-align: center;">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-pecas-os">
+                <!-- Injetado via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Totais da OS -->
+        <div style="background: var(--bg-tertiary); border-radius: var(--radius-md); padding: 16px; margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+          <div>
+            <div class="stat-label">Total Serviços / Diagnóstico</div>
+            <div style="font-size: 1.15rem; font-weight: 700; color: var(--accent-cyan);" id="total-resumo-servicos">R$ 0,00</div>
+          </div>
+          <div>
+            <div class="stat-label">Total Peças</div>
+            <div style="font-size: 1.15rem; font-weight: 700;" id="total-resumo-pecas">R$ 0,00</div>
+          </div>
+          <div>
+            <div class="stat-label">Imposto ME Total (Simples Nacional)</div>
+            <div style="font-size: 1.15rem; font-weight: 700; color: var(--accent-warning);" id="total-resumo-impostos">R$ 0,00</div>
+          </div>
+          <div>
+            <div class="stat-label">Lucro Líquido Real Oficina</div>
+            <div style="font-size: 1.15rem; font-weight: 700; color: var(--accent-success);" id="total-resumo-lucro">R$ 0,00</div>
+          </div>
+          <div style="background: rgba(59, 130, 246, 0.15); padding: 8px 12px; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-primary);">
+            <div class="stat-label" style="color: var(--accent-primary);">TOTAL GERAL DO CLIENTE</div>
+            <div style="font-size: 1.45rem; font-weight: 900; color: #ffffff;" id="total-resumo-geral">R$ 0,00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- ABA 4: CONTROLE DE PENDÊNCIAS & PÓS-VENDA -->
+    <!-- ===================================================================== -->
+    <div id="tab-pendencias" class="tab-content">
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <span class="section-title"><span>⚠️</span> Defeitos Encontrados e Não Mexidos (Respaldo & Radar)</span>
+            <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">
+              Itens identificados mas que o cliente optou por não executar agora (ex: pastilha meia-vida, vazamento leve).
+            </span>
+          </div>
+          <button class="btn btn-warning btn-sm" onclick="abrirModalPendencia()">➕ Anotar Pendência</button>
+        </div>
+
+        <div id="pendencias-lista-container">
+          <!-- Lista de pendências -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- ABA 5: HISTÓRICO COMPLETO DO VEÍCULO -->
+    <!-- ===================================================================== -->
+    <div id="tab-historico" class="tab-content">
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title"><span>📜</span> Prontuário Cronológico de Passagens do Veículo</span>
+        </div>
+        <div id="historico-passagens-container">
+          <!-- Histórico -->
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL INSERIR DTC -->
+  <div class="modal-overlay" id="modal-dtc" style="display: none;">
+    <div class="modal-container" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.1rem; font-weight: 700;">Inserir Código de Falha (DTC)</h3>
+        <button class="btn btn-secondary btn-icon btn-sm" onclick="fecharModalDTC()">✕</button>
+      </div>
+      <form id="form-dtc">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Código DTC (Scanner)</label>
+            <input type="text" id="dtc-codigo" class="form-input" placeholder="Ex: P0171, P0300, P0420" required style="font-family: var(--font-mono); font-weight: 800; text-transform: uppercase;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status do Código</label>
+            <select id="dtc-status" class="form-select">
+              <option value="ATIVO">🔴 ATIVO / PRESENTE</option>
+              <option value="PASSADO">⚪ PASSADO / HISTÓRICO</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descrição / Significado</label>
+            <input type="text" id="dtc-descricao" class="form-input" placeholder="Ex: Mistura Pobre (Banco 1)">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="fecharModalDTC()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Registrar Código</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL INSERIR PENDÊNCIA -->
+  <div class="modal-overlay" id="modal-pendencia" style="display: none;">
+    <div class="modal-container" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.1rem; font-weight: 700;">Anotar Pendência (Item Não Autorizado)</h3>
+        <button class="btn btn-secondary btn-icon btn-sm" onclick="fecharModalPendencia()">✕</button>
+      </div>
+      <form id="form-pendencia">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Descrição do Defeito / Observação</label>
+            <input type="text" id="pend-descricao" class="form-input" placeholder="Ex: Pastilhas de freio dianteiras meia-vida (~3mm)" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Urgência</label>
+              <select id="pend-urgencia" class="form-select">
+                <option value="baixa">Baixa (Acompanhar)</option>
+                <option value="media" selected>Média (Próxima revisão)</option>
+                <option value="alta">Alta (Trocar em breve)</option>
+                <option value="critica">Crítica (Risco iminente)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prazo p/ Retorno (Dias)</label>
+              <select id="pend-dias" class="form-select">
+                <option value="30">30 dias</option>
+                <option value="45" selected>45 dias</option>
+                <option value="60">60 dias</option>
+                <option value="90">90 dias</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="fecharModalPendencia()">Cancelar</button>
+          <button type="submit" class="btn btn-warning">Salvar no Respaldo e Radar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    const osId = (pathParts[0] === 'os' || pathParts[0] === 'ficha') ? pathParts[1] : null;
+    if (!osId || osId === 'os' || osId === 'ficha') {
+      window.location.replace('/');
+      throw new Error('Ficha de OS sem identificador');
+    }
+    let currentOS = null;
+    let appConfig = null;
+
+    async function loadOS() {
+      try {
+        const [osData, configData] = await Promise.all([
+          API.get(`/api/os/${osId}`),
+          API.get('/api/config')
+        ]);
+        currentOS = osData;
+        appConfig = configData;
+
+        // Cabeçalho e dados básicos
+        document.getElementById('os-numero-title').innerText = `OS #${String(currentOS.numero_os).padStart(4, '0')}`;
+        document.getElementById('header-plate-num').innerText = Utils.formatPlaca(currentOS.placa);
+        document.getElementById('veiculo-modelo-title').innerText = currentOS.modelo_ano;
+        // Status no Pátio & Banner Pronto
+        document.getElementById('os-status-select').value = currentOS.status_patio;
+        const bannerPronto = document.getElementById('banner-pronto-pdf');
+        if (currentOS.status_patio === 'pronto' || currentOS.status_patio === 'entregue') {
+          bannerPronto.style.display = 'flex';
+        } else {
+          bannerPronto.style.display = 'none';
+        }
+
+        document.getElementById('info-cliente-nome').innerText = currentOS.cliente_nome;
+        document.getElementById('info-cliente-tel').innerText = currentOS.cliente_telefone;
+        document.getElementById('info-km').innerText = Utils.formatKm(currentOS.km_entrada);
+        document.getElementById('info-data-entrada').innerText = Utils.formatDate(currentOS.created_at);
+        document.getElementById('info-chassi').innerText = currentOS.chassi || 'Não informado';
+        document.getElementById('info-total-os').innerText = Utils.formatCurrency(currentOS.totais.totalGeral);
+
+        if (currentOS.aprovado_cliente_em) {
+          document.getElementById('info-aprovacao-status').innerHTML = `<span class="badge badge-success">✓ Aprovado pelo cliente em ${Utils.formatDate(currentOS.aprovado_cliente_em)}</span>`;
+        } else {
+          document.getElementById('info-aprovacao-status').innerHTML = `<span class="badge badge-warning">Aguardando Aprovação</span>`;
+        }
+
+        // WhatsApp Link
+        const whatsUrl = Utils.generateWhatsAppLink(
+          currentOS.cliente_telefone,
+          currentOS.cliente_nome,
+          currentOS.placa,
+          currentOS.token_publico,
+          appConfig.nome_oficina
+        );
+        document.getElementById('btn-share-whatsapp').href = whatsUrl;
+
+        document.getElementById('btn-copy-link').onclick = () => {
+          const portalUrl = `${window.location.origin}/cliente/${currentOS.token_publico}`;
+          navigator.clipboard.writeText(portalUrl);
+          alert('Link público do cliente copiado:\n' + portalUrl);
+        };
+
+        // Textareas
+        document.getElementById('diag-queixa').value = currentOS.queixa_cliente || '';
+        document.getElementById('diag-notas').value = currentOS.notas_bancada || '';
+
+        // Impostos padrões
+        document.getElementById('taxa-diag-imposto').value = appConfig.aliquota_imposto_servico;
+        document.getElementById('extra-servico-imp').value = appConfig.aliquota_imposto_servico;
+        document.getElementById('peca-imposto').value = appConfig.aliquota_imposto_peca;
+        document.getElementById('peca-margem').value = appConfig.margem_lucro_padrao;
+
+        calcularLiveTaxaDiag();
+        calcularLiveExtraServico();
+        calcularLivePeca();
+
+        // Renderiza sub-seções
+        renderDTCs();
+        renderEvidencias();
+        renderItensFinanceiros();
+        renderPendencias();
+        loadHistoricoVeiculo();
+
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao carregar dados da OS: ' + err.message);
+      }
+    }
+
+    // Abas Principais
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.os-tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // Atualização de Status
+    document.getElementById('os-status-select').onchange = async (e) => {
+      try {
+        await API.patch(`/api/os/${osId}/status`, { status: e.target.value });
+      } catch (err) {
+        alert('Erro ao alterar status: ' + err.message);
+      }
+    };
+
+    // Salvar Queixa & Notas
+    async function salvarNotasQueixa() {
+      try {
+        await API.put(`/api/os/${osId}`, {
+          km_entrada: currentOS.km_entrada,
+          status_patio: currentOS.status_patio,
+          forma_pagamento: currentOS.forma_pagamento,
+          data_agendamento: currentOS.data_agendamento,
+          queixa_cliente: document.getElementById('diag-queixa').value,
+          notas_bancada: document.getElementById('diag-notas').value
+        });
+        alert('Notas técnicas salvas com sucesso!');
+      } catch (err) {
+        alert('Erro ao salvar: ' + err.message);
+      }
+    }
+
+    // ------------------------------------------------------------------------
+    // DTCs
+    // ------------------------------------------------------------------------
+    function renderDTCs() {
+      const container = document.getElementById('dtc-container');
+      if (!currentOS.dtcs || currentOS.dtcs.length === 0) {
+        container.innerHTML = `<span style="color: var(--text-muted); font-size: 0.85rem;">Nenhum código de falha registrado no momento.</span>`;
+        return;
+      }
+      container.innerHTML = currentOS.dtcs.map(dtc => `
+        <div class="quick-dtc-chip ${dtc.status === 'ATIVO' ? 'chip-ativo' : 'chip-passado'}">
+          <strong>${dtc.codigo}</strong>
+          <span>${dtc.descricao || dtc.status}</span>
+          <button class="btn btn-sm btn-secondary" style="padding: 1px 4px; font-size: 0.7rem;" onclick="removerDTC('${dtc.id}')">✕</button>
+        </div>
+      `).join('');
+    }
+
+    const modalDTC = document.getElementById('modal-dtc');
+    function abrirModalDTC() {
+      document.getElementById('form-dtc').reset();
+      modalDTC.style.display = 'flex';
+      document.getElementById('dtc-codigo').focus();
+    }
+    function fecharModalDTC() {
+      modalDTC.style.display = 'none';
+    }
+    document.getElementById('form-dtc').onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        await API.post(`/api/os/${osId}/dtc`, {
+          codigo: document.getElementById('dtc-codigo').value,
+          status: document.getElementById('dtc-status').value,
+          descricao: document.getElementById('dtc-descricao').value
+        });
+        fecharModalDTC();
+        loadOS();
+      } catch (err) {
+        alert('Erro ao adicionar DTC: ' + err.message);
+      }
+    };
+    async function removerDTC(id) {
+      if (confirm('Deseja remover este código de falha?')) {
+        await API.delete(`/api/dtc/${id}`);
+        loadOS();
+      }
+    }
+
+    // ------------------------------------------------------------------------
+    // EVIDÊNCIAS / FOTOS COMPRIMIDAS
+    // ------------------------------------------------------------------------
+    async function handleUploadVistoria(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const base64 = await Utils.compressImage(file, 1280, 0.75);
+        await API.post(`/api/os/${osId}/evidencia`, {
+          veiculo_id: currentOS.veiculo_id,
+          categoria: 'vistoria_entrada',
+          momento: 'recepcao',
+          titulo_observacao: 'Checklist de Entrada',
+          visivel_cliente: true,
+          base64Image: base64
+        });
+        loadOS();
+      } catch (err) {
+        alert('Erro no envio da foto: ' + err.message);
+      }
+    }
+
+    async function handleUploadFotoTecnica(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const titulo = prompt('Título da captura técnica (ex: Sinal Osciloscópio Sensor Hall):', 'Sinal Osciloscópio');
+      if (titulo === null) return;
+      const visivel = confirm('Deseja que esta imagem apareça no Laudo do Cliente?\n\n[OK] = Sim, visível no laudo\n[Cancelar] = Não, apenas arquivo técnico interno');
+      try {
+        const base64 = await Utils.compressImage(file, 1280, 0.75);
+        await API.post(`/api/os/${osId}/evidencia`, {
+          veiculo_id: currentOS.veiculo_id,
+          categoria: 'osciloscopio',
+          momento: 'antes',
+          titulo_observacao: titulo,
+          visivel_cliente: visivel,
+          base64Image: base64
+        });
+        loadOS();
+      } catch (err) {
+        alert('Erro no envio da foto técnica: ' + err.message);
+      }
+    }
+
+    function renderEvidencias() {
+      const vistoriaContainer = document.getElementById('galeria-vistoria-container');
+      const tecnicaContainer = document.getElementById('galeria-tecnica-container');
+
+      const vistoriaFotos = (currentOS.evidencias || []).filter(ev => ev.categoria === 'vistoria_entrada');
+      const tecnicaFotos = (currentOS.evidencias || []).filter(ev => ev.categoria !== 'vistoria_entrada');
+
+      vistoriaContainer.innerHTML = vistoriaFotos.length === 0 
+        ? `<div style="grid-column: 1/-1; color: var(--text-muted); font-size: 0.85rem;">Nenhuma foto de vistoria tirada ainda.</div>`
+        : vistoriaFotos.map(ev => `
+            <div class="evidence-card">
+              <a href="${ev.storage_path}" target="_blank">
+                <img src="${ev.storage_path}" class="evidence-img">
+              </a>
+              <div class="evidence-meta">
+                <strong>${ev.titulo_observacao || 'Vistoria'}</strong>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">${Utils.formatDate(ev.created_at)}</div>
+                <div style="margin-top: 6px; display: flex; justify-content: space-between;">
+                  <span class="badge badge-success">No Laudo</span>
+                  <button class="btn btn-danger btn-sm" onclick="removerEvidencia('${ev.id}')">Excluir</button>
+                </div>
+              </div>
+            </div>
+          `).join('');
+
+      tecnicaContainer.innerHTML = tecnicaFotos.length === 0
+        ? `<div style="grid-column: 1/-1; color: var(--text-muted); font-size: 0.85rem;">Nenhuma captura de osciloscópio ou scanner carregada.</div>`
+        : tecnicaFotos.map(ev => `
+            <div class="evidence-card">
+              <a href="${ev.storage_path}" target="_blank">
+                <img src="${ev.storage_path}" class="evidence-img">
+              </a>
+              <div class="evidence-meta">
+                <strong>${ev.titulo_observacao || 'Captura Técnica'}</strong>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">${Utils.formatDate(ev.created_at)}</div>
+                <div style="margin-top: 6px; display: flex; justify-content: space-between; align-items: center;">
+                  ${ev.visivel_cliente ? `<span class="badge badge-success">No Laudo</span>` : `<span class="badge badge-warning">Interno</span>`}
+                  <button class="btn btn-danger btn-sm" onclick="removerEvidencia('${ev.id}')">Excluir</button>
+                </div>
+              </div>
+            </div>
+          `).join('');
+    }
+
+    async function removerEvidencia(id) {
+      if (confirm('Deseja excluir esta imagem permanentemente?')) {
+        await API.delete(`/api/evidencia/${id}`);
+        loadOS();
+      }
+    }
+
+    // ------------------------------------------------------------------------
+    // 1. BLOCO DIAGNÓSTICO TÉCNICO & TAREFAS INCLUSAS (R$ 0,00)
+    // ------------------------------------------------------------------------
+    function calcularLiveTaxaDiag() {
+      const valor = Number(document.getElementById('taxa-diag-valor').value) || 0;
+      const imp = Number(document.getElementById('taxa-diag-imposto').value) || 6.0;
+      const impValor = valor * (imp / 100);
+      const liq = valor - impValor;
+
+      document.getElementById('preview-taxa-diag').innerHTML = `
+        Cobrança Fixa de Diagnóstico: <strong style="color: #fff;">${Utils.formatCurrency(valor)}</strong> | 
+        Imposto ME (${imp}%): <span style="color: var(--accent-warning);">${Utils.formatCurrency(impValor)}</span> | 
+        Líquido no Caixa: <strong style="color: var(--accent-success);">${Utils.formatCurrency(liq)}</strong>
+      `;
+    }
+
+    // Impede duplo clique enquanto um salvamento ainda está em andamento.
+    function beginFormSubmit(form, event) {
+      if (form.dataset.submitting === 'true') return null;
+      const button = event.submitter || form.querySelector('button[type="submit"]');
+      form.dataset.submitting = 'true';
+      if (button) button.disabled = true;
+      return button;
+    }
+
+    function endFormSubmit(form, button) {
+      form.dataset.submitting = 'false';
+      if (button) button.disabled = false;
+    }
+
+    // Fixar / Salvar Taxa Única de Diagnóstico
+    document.getElementById('form-taxa-diagnostico').onsubmit = async (e) => {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const button = beginFormSubmit(form, e);
+      if (!button) return;
+      try {
+        const payload = {
+          tipo: 'servico',
+          origem: 'oficina',
+          modalidade_cobranca: 'taxa_diagnostico',
+          descricao: document.getElementById('taxa-diag-desc').value,
+          quantidade: 1,
+          custo_compra_unitario: 0,
+          margem_percentual: 0,
+          imposto_percentual: document.getElementById('taxa-diag-imposto').value,
+          preco_venda_unitario: document.getElementById('taxa-diag-valor').value
+        };
+        await API.post(`/api/os/${osId}/item`, payload);
+        alert('Taxa única de diagnóstico salva com sucesso!');
+        await loadOS();
+      } catch (err) {
+        alert('Erro ao salvar diagnóstico: ' + err.message);
+      } finally {
+        endFormSubmit(form, button);
+      }
+    };
+
+    // Adicionar Tarefa/Serviço Incluso (R$ 0,00 adicional)
+    document.getElementById('form-tarefa-inclusa').onsubmit = async (e) => {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const button = beginFormSubmit(form, e);
+      if (!button) return;
+      try {
+        // Garante que se ainda não existir taxa de diagnóstico cadastrada, cria a base padrão primeiro
+        const diagExistente = (currentOS.itens || []).find(i => i.modalidade_cobranca === 'taxa_diagnostico');
+        if (!diagExistente) {
+          await API.post(`/api/os/${osId}/item`, {
+            tipo: 'servico',
+            origem: 'oficina',
+            modalidade_cobranca: 'taxa_diagnostico',
+            descricao: document.getElementById('taxa-diag-desc').value || 'Diagnóstico Técnico Especializado de Bancada',
+            quantidade: 1,
+            custo_compra_unitario: 0,
+            margem_percentual: 0,
+            imposto_percentual: document.getElementById('taxa-diag-imposto').value || 6.0,
+            preco_venda_unitario: document.getElementById('taxa-diag-valor').value || 300.00
+          });
+        }
+
+        const desc = document.getElementById('tarefa-inclusa-desc').value;
+        const payload = {
+          tipo: 'servico',
+          origem: 'oficina',
+          modalidade_cobranca: 'incluso_diagnostico',
+          descricao: desc,
+          quantidade: 1,
+          custo_compra_unitario: 0,
+          margem_percentual: 0,
+          imposto_percentual: 0,
+          preco_venda_unitario: 0
+        };
+
+        await API.post(`/api/os/${osId}/item`, payload);
+        document.getElementById('tarefa-inclusa-desc').value = '';
+        await loadOS();
+      } catch (err) {
+        alert('Erro ao adicionar tarefa inclusa: ' + err.message);
+      } finally {
+        endFormSubmit(form, button);
+      }
+    };
+
+    // ------------------------------------------------------------------------
+    // 2. MÃO DE OBRA ADICIONAL / REPAROS PESADOS (Cobrados à Parte)
+    // ------------------------------------------------------------------------
+    function calcularLiveExtraServico() {
+      const valor = Number(document.getElementById('extra-servico-valor').value) || 0;
+      const imp = Number(document.getElementById('extra-servico-imp').value) || 6.0;
+      const impValor = valor * (imp / 100);
+      const liq = valor - impValor;
+
+      document.getElementById('preview-extra-servico').innerHTML = `
+        Cobrado do Cliente: <strong style="color: #fff;">${Utils.formatCurrency(valor)}</strong> | 
+        Imposto ME (${imp}%): <span style="color: var(--accent-warning);">${Utils.formatCurrency(impValor)}</span> | 
+        Líquido Oficina: <strong style="color: var(--accent-success);">${Utils.formatCurrency(liq)}</strong>
+      `;
+    }
+
+    document.getElementById('form-servico-extra').onsubmit = async (e) => {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const button = beginFormSubmit(form, e);
+      if (!button) return;
+      try {
+        const payload = {
+          tipo: 'servico',
+          origem: 'oficina',
+          modalidade_cobranca: 'padrao',
+          descricao: document.getElementById('extra-servico-desc').value,
+          quantidade: 1,
+          custo_compra_unitario: 0,
+          margem_percentual: 0,
+          imposto_percentual: document.getElementById('extra-servico-imp').value,
+          preco_venda_unitario: document.getElementById('extra-servico-valor').value
+        };
+        await API.post(`/api/os/${osId}/item`, payload);
+        document.getElementById('extra-servico-desc').value = '';
+        document.getElementById('extra-servico-valor').value = '';
+        await loadOS();
+      } catch (err) {
+        alert('Erro ao adicionar mão de obra: ' + err.message);
+      } finally {
+        endFormSubmit(form, button);
+      }
+    };
+
+    // ------------------------------------------------------------------------
+    // 3. PEÇAS & INSUMOS (MARKUP DIVISOR ME)
+    // ------------------------------------------------------------------------
+    function atualizarOrigemPeca() {
+      const origem = document.getElementById('peca-origem').value;
+      const rowFin = document.getElementById('row-peca-financeiro');
+      if (origem === 'cliente') {
+        rowFin.style.display = 'none';
+        document.getElementById('preview-peca-markup').innerHTML = `
+          <strong style="color: var(--accent-warning);">👤 Peça Fornecida pelo Cliente (R$ 0,00)</strong><br>
+          <span style="color: var(--text-secondary); font-size: 0.8rem;">
+            Registrada no prontuário da OS para comprovação jurídica. Não incide custo nem imposto para a oficina (garantia apenas sobre a mão de obra).
+          </span>
+        `;
+      } else {
+        rowFin.style.display = 'grid';
+        calcularLivePeca();
+      }
+    }
+
+    function calcularLivePeca() {
+      const origem = document.getElementById('peca-origem').value;
+      if (origem === 'cliente') return;
+
+      const custo = Number(document.getElementById('peca-custo').value) || 0;
+      const margem = Number(document.getElementById('peca-margem').value) || 30;
+      const imp = Number(document.getElementById('peca-imposto').value) || 6;
+      const qtd = Number(document.getElementById('peca-qtd').value) || 1;
+
+      const res = Utils.calcularMarkupDivisor(custo, margem, imp);
+      document.getElementById('peca-preco-venda').value = res.precoVendaUnitario;
+
+      const totalVenda = res.precoVendaUnitario * qtd;
+      const totalLucro = res.lucroLiquido * qtd;
+      const totalImp = res.valorImposto * qtd;
+
+      document.getElementById('preview-peca-markup').innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <strong>Markup Divisor ME (Imposto Embutido):</strong> 
+            Venda Unitária: <strong style="color: var(--accent-success);">${Utils.formatCurrency(res.precoVendaUnitario)}</strong>
+          </div>
+          <div>
+            Imposto ME (${imp}%): <span style="color: var(--accent-warning);">${Utils.formatCurrency(totalImp)}</span> | 
+            Lucro Líquido Real: <strong style="color: var(--accent-success);">${Utils.formatCurrency(totalLucro)}</strong>
+          </div>
+        </div>
+      `;
+    }
+
+    document.getElementById('form-peca').onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        const origem = document.getElementById('peca-origem').value;
+        const payload = {
+          tipo: 'peca',
+          origem: origem,
+          modalidade_cobranca: 'padrao',
+          descricao: document.getElementById('peca-descricao').value,
+          quantidade: document.getElementById('peca-qtd').value,
+          custo_compra_unitario: origem === 'cliente' ? 0 : document.getElementById('peca-custo').value,
+          margem_percentual: origem === 'cliente' ? 0 : document.getElementById('peca-margem').value,
+          imposto_percentual: origem === 'cliente' ? 0 : document.getElementById('peca-imposto').value,
+          preco_venda_unitario: origem === 'cliente' ? 0 : document.getElementById('peca-preco-venda').value,
+          calcular_markup_automatico: true
+        };
+
+        await API.post(`/api/os/${osId}/item`, payload);
+        document.getElementById('peca-descricao').value = '';
+        document.getElementById('peca-custo').value = '';
+        document.getElementById('peca-preco-venda').value = '';
+        loadOS();
+      } catch (err) {
+        alert('Erro ao salvar peça: ' + err.message);
+      }
+    };
+
+    // ------------------------------------------------------------------------
+    // RENDERIZAÇÃO DA COMPOSIÇÃO DO ORÇAMENTO
+    // ------------------------------------------------------------------------
+    function renderItensFinanceiros() {
+      const itens = currentOS.itens || [];
+
+      // Filtros
+      const diagItem = itens.find(i => i.modalidade_cobranca === 'taxa_diagnostico');
+      const tarefasInclusas = itens.filter(i => i.modalidade_cobranca === 'incluso_diagnostico');
+      const servicosExtras = itens.filter(i => i.tipo === 'servico' && i.modalidade_cobranca !== 'taxa_diagnostico' && i.modalidade_cobranca !== 'incluso_diagnostico');
+      const pecas = itens.filter(i => i.tipo === 'peca');
+
+      // Atualiza Bloco 1 (Diagnóstico)
+      const diagBadge = document.getElementById('diag-badge-status');
+      const btnSalvarText = document.getElementById('btn-salvar-diag-text');
+      if (diagItem) {
+        diagBadge.innerHTML = `<span class="badge badge-success" style="font-size: 0.85rem;">✓ Taxa Ativa: ${Utils.formatCurrency(diagItem.preco_venda_total)}</span>`;
+        document.getElementById('taxa-diag-desc').value = diagItem.descricao;
+        document.getElementById('taxa-diag-valor').value = diagItem.preco_venda_unitario;
+        document.getElementById('taxa-diag-imposto').value = diagItem.imposto_percentual;
+        btnSalvarText.innerText = '💾 Atualizar Valor da Taxa';
+      } else {
+        diagBadge.innerHTML = `<span class="badge badge-warning">Ainda não definida</span>`;
+        btnSalvarText.innerText = '💾 Fixar Taxa de Diagnóstico';
+      }
+      calcularLiveTaxaDiag();
+
+      // Renderiza Tarefas Inclusas no Bloco 1
+      const listaTarefasContainer = document.getElementById('lista-tarefas-inclusas');
+      if (tarefasInclusas.length === 0) {
+        listaTarefasContainer.innerHTML = `<div style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">Nenhuma tarefa inclusa adicionada ainda.</div>`;
+      } else {
+        listaTarefasContainer.innerHTML = tarefasInclusas.map(t => `
+          <div class="tarefa-inclusa-row">
+            <div>
+              <strong style="color: #fff;">✓ ${t.descricao}</strong>
+              <span class="badge badge-success" style="margin-left: 8px;">Incluso no Diagnóstico (R$ 0,00)</span>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="removerItem('${t.id}')">✕</button>
+          </div>
+        `).join('');
+      }
+
+      // Renderiza Tabela 1: Bloco do Diagnóstico
+      const tbodyDiag = document.getElementById('tbody-diag-os');
+      if (!diagItem && tarefasInclusas.length === 0) {
+        tbodyDiag.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhuma taxa de diagnóstico registrada nesta OS.</td></tr>`;
+      } else {
+        let rowsHtml = '';
+        if (diagItem) {
+          rowsHtml += `
+            <tr style="background: rgba(6, 182, 212, 0.08);">
+              <td><strong style="font-size: 1rem; color: #fff;">${diagItem.descricao}</strong></td>
+              <td><span class="badge badge-blue">🔬 Taxa de Diagnóstico</span></td>
+              <td style="color: var(--accent-warning);">${Utils.formatCurrency(diagItem.valor_imposto_total)}</td>
+              <td style="color: var(--accent-success); font-weight: 700;">${Utils.formatCurrency(diagItem.lucro_liquido_total)}</td>
+              <td style="font-weight: 900; color: var(--accent-cyan); text-align: right; font-size: 1.05rem;">${Utils.formatCurrency(diagItem.preco_venda_total)}</td>
+              <td style="text-align: center;">
+                <button class="btn btn-danger btn-sm" onclick="removerItem('${diagItem.id}')">✕</button>
+              </td>
+            </tr>
+          `;
+        }
+        tarefasInclusas.forEach(t => {
+          rowsHtml += `
+            <tr>
+              <td style="padding-left: 28px;">
+                <span style="color: var(--accent-success);">↳ ✓</span> <strong>${t.descricao}</strong>
+              </td>
+              <td><span class="badge badge-success">🟢 Incluso no Diagnóstico</span></td>
+              <td style="color: var(--text-muted);">R$ 0,00</td>
+              <td style="color: var(--text-muted);">R$ 0,00</td>
+              <td style="text-align: right; color: var(--accent-success); font-weight: 700;">R$ 0,00</td>
+              <td style="text-align: center;">
+                <button class="btn btn-danger btn-sm" onclick="removerItem('${t.id}')">✕</button>
+              </td>
+            </tr>
+          `;
+        });
+        tbodyDiag.innerHTML = rowsHtml;
+      }
+
+      // Renderiza Tabela 2: Serviços Extras / Pesados
+      const tbodyExtras = document.getElementById('tbody-servicos-extras-os');
+      if (servicosExtras.length === 0) {
+        tbodyExtras.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Nenhum serviço adicional além do diagnóstico.</td></tr>`;
+      } else {
+        tbodyExtras.innerHTML = servicosExtras.map(s => `
+          <tr>
+            <td><strong>${s.descricao}</strong></td>
+            <td style="color: var(--accent-warning);">${Utils.formatCurrency(s.valor_imposto_total)}</td>
+            <td style="color: var(--accent-success); font-weight: 700;">${Utils.formatCurrency(s.lucro_liquido_total)}</td>
+            <td style="font-weight: 800; color: #fff; text-align: right;">${Utils.formatCurrency(s.preco_venda_total)}</td>
+            <td style="text-align: center;">
+              <button class="btn btn-danger btn-sm" onclick="removerItem('${s.id}')">✕</button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      // Renderiza Tabela 3: Peças
+      const tbodyPecas = document.getElementById('tbody-pecas-os');
+      if (pecas.length === 0) {
+        tbodyPecas.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Nenhuma peça aplicada nesta OS.</td></tr>`;
+      } else {
+        tbodyPecas.innerHTML = pecas.map(p => `
+          <tr>
+            <td><strong>${p.descricao}</strong></td>
+            <td>
+              ${p.origem === 'cliente' 
+                ? '<span class="badge badge-warning">👤 Do Cliente (R$ 0)</span>' 
+                : '<span class="badge badge-blue">🏢 Oficina</span>'}
+            </td>
+            <td>${p.quantidade}</td>
+            <td style="color: var(--text-muted);">${Utils.formatCurrency(p.custo_compra_unitario)}</td>
+            <td style="color: var(--accent-success);">${p.origem === 'cliente' ? '-' : `${p.margem_percentual}%`}</td>
+            <td style="color: var(--accent-warning);">${Utils.formatCurrency(p.valor_imposto_total)}</td>
+            <td style="font-weight: 800; color: #fff; text-align: right;">${Utils.formatCurrency(p.preco_venda_total)}</td>
+            <td style="text-align: center;">
+              <button class="btn btn-danger btn-sm" onclick="removerItem('${p.id}')">✕</button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      // Atualiza totais gerais
+      document.getElementById('total-resumo-servicos').innerText = Utils.formatCurrency(currentOS.totais.totalServicos);
+      document.getElementById('total-resumo-pecas').innerText = Utils.formatCurrency(currentOS.totais.totalPecas);
+      document.getElementById('total-resumo-impostos').innerText = Utils.formatCurrency(currentOS.totais.impostoTotal);
+      document.getElementById('total-resumo-lucro').innerText = Utils.formatCurrency(currentOS.totais.lucroLiquidoTotal);
+      document.getElementById('total-resumo-geral').innerText = Utils.formatCurrency(currentOS.totais.totalGeral);
+    }
+
+    async function removerItem(id) {
+      if (confirm('Deseja remover este item da OS?')) {
+        await API.delete(`/api/item/${id}`);
+        loadOS();
+      }
+    }
+
+    // ------------------------------------------------------------------------
+    // PENDÊNCIAS (DEFEITOS NÃO MEXIDOS)
+    // ------------------------------------------------------------------------
+    const modalPendencia = document.getElementById('modal-pendencia');
+    function abrirModalPendencia() {
+      document.getElementById('form-pendencia').reset();
+      modalPendencia.style.display = 'flex';
+      document.getElementById('pend-descricao').focus();
+    }
+    function fecharModalPendencia() {
+      modalPendencia.style.display = 'none';
+    }
+    document.getElementById('form-pendencia').onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        await API.post(`/api/os/${osId}/pendencia`, {
+          veiculo_id: currentOS.veiculo_id,
+          descricao_defeito: document.getElementById('pend-descricao').value,
+          urgencia: document.getElementById('pend-urgencia').value,
+          dias_para_retorno: document.getElementById('pend-dias').value
+        });
+        fecharModalPendencia();
+        loadOS();
+      } catch (err) {
+        alert('Erro ao salvar pendência: ' + err.message);
+      }
+    };
+
+    function renderPendencias() {
+      const container = document.getElementById('pendencias-lista-container');
+      if (!currentOS.pendencias || currentOS.pendencias.length === 0) {
+        container.innerHTML = `<span style="color: var(--text-muted); font-size: 0.85rem;">Nenhuma pendência ou item não autorizado registrado nesta OS.</span>`;
+        return;
+      }
+      container.innerHTML = currentOS.pendencias.map(p => `
+        <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="badge ${p.urgencia==='critica'?'badge-danger':p.urgencia==='alta'?'badge-warning':'badge-blue'}">${p.urgencia.toUpperCase()}</span>
+              <strong style="font-size: 1rem;">${p.descricao_defeito}</strong>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">
+              Alerta de Retorno previsto para: <strong>${Utils.formatDateSimple(p.data_prevista_retorno)}</strong> (${p.dias_para_retorno} dias)
+            </div>
+          </div>
+          <div>
+            <button class="btn ${p.resolvido ? 'btn-secondary' : 'btn-success'} btn-sm" onclick="togglePendencia('${p.id}', ${!p.resolvido})">
+              ${p.resolvido ? '✓ Resolvido' : 'Marcar como Feito'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function togglePendencia(id, resolvido) {
+      await API.patch(`/api/pendencia/${id}/resolver`, { resolvido });
+      loadOS();
+    }
+
+    // ------------------------------------------------------------------------
+    // HISTÓRICO DO VEÍCULO
+    // ------------------------------------------------------------------------
+    async function loadHistoricoVeiculo() {
+      try {
+        const hist = await API.get(`/api/veiculo/${currentOS.veiculo_id}/historico`);
+        const container = document.getElementById('historico-passagens-container');
+        container.innerHTML = hist.map(h => `
+          <div style="padding: 12px; border-left: 3px solid var(--accent-primary); background: var(--bg-tertiary); margin-bottom: 10px; border-radius: 0 var(--radius-md) var(--radius-md) 0;">
+            <div style="display: flex; justify-content: space-between;">
+              <strong>OS #${String(h.numero_os).padStart(4, '0')} - ${Utils.formatKm(h.km_entrada)}</strong>
+              <span style="color: var(--accent-success); font-weight: 700;">${Utils.formatCurrency(h.total_gasto)}</span>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Entrada em: ${Utils.formatDate(h.created_at)}</div>
+            <div style="font-size: 0.85rem; margin-top: 6px;">${h.queixa_cliente || 'Sem queixa registrada'}</div>
+            <div style="margin-top: 8px;">
+              <a href="/os/${h.id}" class="btn btn-secondary btn-sm">Abrir Esta OS ➔</a>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // ------------------------------------------------------------------------
+    // GERAÇÃO DE PDF / LAUDO OFICIAL DO CLIENTE (A4)
+    // ------------------------------------------------------------------------
+    function imprimirOSPDF() {
+      window.open(`/laudo/${osId}`, '_blank');
+    }
+
+    // Inicialização
+    loadOS();
+  </script>
+</body>
+</html>
