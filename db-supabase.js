@@ -80,7 +80,10 @@ async function searchVeiculosEClientes(query) {
 
 async function createOS(data) {
   const veiculo = await createOrUpdateVeiculo(data);
+  const lastNumber = unwrap(await supabase.from('ordens_servico').select('numero_os').order('numero_os', { ascending: false }).limit(1));
+  const nextNumber = (Number(lastNumber[0]?.numero_os) || 0) + 1;
   const row = unwrap(await supabase.from('ordens_servico').insert({
+    numero_os: nextNumber,
     veiculo_id: veiculo.id,
     km_entrada: Number(data.km_entrada) || 0,
     status_patio: data.status_patio || 'diagnostico',
@@ -91,6 +94,10 @@ async function createOS(data) {
     token_publico: crypto.randomBytes(16).toString('hex')
   }).select().single());
   return getOSById(row.id);
+}
+
+async function renumberOS(id, numero) {
+  return unwrap(await supabase.from('ordens_servico').update({ numero_os: Number(numero) }).eq('id', id).select().single());
 }
 
 function withVehicle(row) {
@@ -298,7 +305,7 @@ module.exports = {
   isSupabase: true,
   uploadEvidence,
   getConfig, updateConfig, getVeiculoByPlaca, deleteVeiculo, createOrUpdateVeiculo, searchVeiculosEClientes,
-  createOS, getOSById, updateOS, updateOSStatus, listPatio, listHistoricoVeiculo,
+  createOS, renumberOS, getOSById, updateOS, updateOSStatus, listPatio, listHistoricoVeiculo,
   addDTC, deleteDTC, addEvidencia, deleteEvidencia, addItemFinanceiro, deleteItemFinanceiro,
   addPendencia, toggleResolverPendencia, getDashboardStats, getPortalCliente, aprovarOrcamentoCliente
 };

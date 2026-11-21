@@ -246,6 +246,11 @@ function createOS(data) {
   return getOSById(osId);
 }
 
+function renumberOS(id, numero) {
+  const result = db.prepare('UPDATE ordens_servico SET numero_os = ? WHERE id = ?').run(Number(numero), id);
+  return result.changes > 0 ? getOSById(id) : null;
+}
+
 function getOSById(id) {
   const os = db.prepare(`
     SELECT os.*, v.placa, v.modelo_ano, v.chassi, v.cliente_nome, v.cliente_telefone
@@ -689,6 +694,7 @@ module.exports = {
   createOrUpdateVeiculo,
   searchVeiculosEClientes,
   createOS,
+  renumberOS,
   getOSById,
   updateOS,
   updateOSStatus,

@@ -173,6 +173,14 @@ const server = http.createServer(async (req, res) => {
         return sendJSON(res, 200, updated);
       }
 
+      // Ajuste administrativo da numeração da OS
+      if (subAction === 'numero' && method === 'PATCH') {
+        const body = await parseBody(req);
+        const updated = await repo.renumberOS(osId, body.numero_os);
+        if (!updated) return sendJSON(res, 404, { error: 'OS não encontrada' });
+        return sendJSON(res, 200, updated);
+      }
+
       // DTCs
       if (subAction === 'dtc' && method === 'POST') {
         const body = await parseBody(req);
