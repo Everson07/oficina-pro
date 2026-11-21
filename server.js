@@ -12,6 +12,7 @@ const repo = hasSupabaseConfig ? require('./db-supabase.js') : require('./db.js'
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const UPLOADS_DIR = repo.uploadsDir || path.join(__dirname, 'uploads');
+const osRequestsInFlight = new Map();
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -141,7 +142,17 @@ const server = http.createServer(async (req, res) => {
     // Ordens de Serviço
     if (pathname === '/api/os' && method === 'POST') {
       const body = await parseBody(req);
-      const novaOS = await repo.createOS(body);
+      const requestId = String(body.request_id || '').trim();
+      let creation = requestId ? osRequestsInFlight.get(requestId) : null;
+      if (!creation) {
+        creation = repo.createOS(body);
+        if (requestId) {
+          osRequestsInFlight.set(requestId, creation);
+          const clearRequest = () => setTimeout(() => osRequestsInFlight.delete(requestId), 15000);
+          creation.then(clearRequest, clearRequest);
+        }
+      }
+      const novaOS = await creation;
       return sendJSON(res, 201, novaOS);
     }
 

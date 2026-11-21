@@ -522,10 +522,20 @@
       }
     };
 
+    let criandoOS = false;
     document.getElementById('form-nova-os').onsubmit = async (e) => {
       e.preventDefault();
+      if (criandoOS) return;
+      criandoOS = true;
+      const submitButton = document.querySelector('#form-nova-os button[type="submit"]');
+      const submitLabel = submitButton ? submitButton.innerText : '';
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerText = 'Salvando OS...';
+      }
       try {
         const payload = {
+          request_id: window.crypto && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
           placa: document.getElementById('nova-placa').value,
           modelo_ano: document.getElementById('nova-modelo').value,
           km_entrada: document.getElementById('nova-km').value,
@@ -538,6 +548,11 @@
         const nova = await API.post('/api/os', payload);
         window.location.href = `/os/${nova.id}`;
       } catch (err) {
+        criandoOS = false;
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.innerText = submitLabel;
+        }
         alert('Erro ao criar OS: ' + err.message);
       }
     };
