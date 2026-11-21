@@ -12,9 +12,20 @@ if ('serviceWorker' in navigator) {
 }
 
 const API = {
-  async get(endpoint) {
+  async get(endpoint, attempt = 0) {
     const res = await fetch(endpoint);
-    if (!res.ok) throw new Error(`Erro ${res.status}: ${res.statusText}`);
+    if (!res.ok) {
+      if ([500, 502, 503, 504].includes(res.status) && attempt < 2) {
+        await new Promise(resolve => setTimeout(resolve, 400 * (attempt + 1)));
+        return API.get(endpoint, attempt + 1);
+      }
+      let detail = '';
+      try {
+        const payload = await res.clone().json();
+        detail = payload.details || payload.error || '';
+      } catch (_) {}
+      throw new Error(`Erro ${res.status}: ${detail || res.statusText}`);
+    }
     return res.json();
   },
   async post(endpoint, data) {
