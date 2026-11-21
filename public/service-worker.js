@@ -3,6 +3,7 @@ const APP_SHELL = [
   '/',
   '/index.html',
   '/os-ficha-v3',
+  '/laudo-v3',
   '/cliente.html',
   '/laudo.html',
   '/css/style.css',

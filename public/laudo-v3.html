@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/oficina-pro-192.svg" type="image/svg+xml">
+  <title>Laudo Técnico & Ordem de Serviço</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #525659;
+      color: #1e293b;
+      line-height: 1.45;
+      padding: 20px 10px;
+    }
+
+    /* Barra Superior de Ações na Tela (Oculta na Impressão) */
+    .screen-action-bar {
+      max-width: 820px;
+      margin: 0 auto 12px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      padding: 12px 18px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-print {
+      background-color: #10b981;
+      color: #ffffff;
+    }
+    .btn-print:hover {
+      background-color: #059669;
+    }
+    .btn-back {
+      background-color: #334155;
+      color: #ffffff;
+    }
+    .btn-back:hover {
+      background-color: #475569;
+    }
+
+    /* Painel de Controle de Visibilidade do PDF (Oculto na Impressão) */
+    .pdf-customizer-box {
+      max-width: 820px;
+      margin: 0 auto 16px auto;
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 12px 16px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+    .customizer-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .filter-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .pill-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #334155;
+      color: #f1f5f9;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s;
+    }
+    .pill-check:hover {
+      background: #475569;
+    }
+    .pill-check input[type="checkbox"] {
+      cursor: pointer;
+      width: 15px;
+      height: 15px;
+      accent-color: #10b981;
+    }
+
+    /* Folha A4 do Laudo */
+    .a4-page {
+      background: #ffffff;
+      width: 100%;
+      max-width: 820px;
+      min-height: 1100px;
+      margin: 0 auto;
+      padding: 35px 40px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.35);
+      border-radius: 4px;
+      color: #0f172a;
+    }
+
+    /* Cabeçalho */
+    .laudo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 14px;
+      margin-bottom: 16px;
+    }
+    .shop-title {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+    }
+    .shop-subtitle {
+      font-size: 0.85rem;
+      color: #475569;
+      margin-top: 2px;
+    }
+    .os-badge-box {
+      text-align: right;
+    }
+    .os-number-text {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #0f172a;
+    }
+    .os-date-text {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    /* Caixas de Seções */
+    .section-box {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      background: #f8fafc;
+    }
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #1e293b;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Grid do Veículo */
+    .vehicle-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      font-size: 0.9rem;
+    }
+    .grid-cell {
+      display: flex;
+      flex-direction: column;
+    }
+    .cell-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .cell-value {
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    /* Placa Automotiva no PDF */
+    .plate-badge {
+      display: inline-block;
+      background: #ffffff;
+      color: #000;
+      border: 1.5px solid #000;
+      border-radius: 3px;
+      padding: 2px 6px;
+      font-family: monospace;
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: 1px;
+    }
+
+    /* Tabelas */
+    .laudo-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin-top: 4px;
+    }
+    .laudo-table th {
+      background-color: #f1f5f9;
+      color: #334155;
+      font-weight: 700;
+      padding: 6px 10px;
+      text-align: left;
+      border: 1px solid #cbd5e1;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+    }
+    .laudo-table td {
+      padding: 6px 10px;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+    }
+
+    .row-tarefa-inclusa td {
+      background-color: #f0fdf4;
+    }
+    .badge-incluso {
+      display: inline-block;
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    /* Galeria de Fotos no Laudo */
+    .laudo-photos-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .laudo-photo-item {
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+    .laudo-photo-img {
+      width: 100%;
+      height: 125px;
+      object-fit: cover;
+    }
+    .laudo-photo-label {
+      padding: 4px 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #334155;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Totais */
+    .total-summary-table {
+      width: 320px;
+      margin-left: auto;
+      margin-top: 10px;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+    .total-summary-table td {
+      padding: 4px 8px;
+    }
+    .total-geral-row {
+      border-top: 2px solid #0f172a;
+      font-size: 1.15rem;
+      font-weight: 900;
+    }
+
+    /* Termo & Assinaturas */
+    .termo-legal {
+      margin-top: 20px;
+      font-size: 0.75rem;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 8px 12px;
+      text-align: justify;
+      line-height: 1.4;
+    }
+    .signature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-top: 45px;
+      text-align: center;
+      font-size: 0.85rem;
+    }
+    .signature-line {
+      border-top: 1px solid #0f172a;
+      padding-top: 6px;
+      font-weight: 700;
+    }
+
+    /* =========================================================================
+       REGRAS ESTRITAS DE IMPRESSÃO (A4 LIMPO)
+       ========================================================================= */
+    @media print {
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+      }
+      .screen-action-bar,
+      .pdf-customizer-box,
+      .laudo-photo-toggle {
+        display: none !important;
+      }
+      .a4-page {
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        padding: 10mm 15mm !important;
+        max-width: 100% !important;
+        min-height: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra de Ações na Tela -->
+  <div class="screen-action-bar">
+    <a href="#" id="link-voltar" class="btn-action btn-back">⬅ Voltar para a OS</a>
+    <div style="color: #fff; font-size: 0.9rem;">
+      Visualização Oficial de Impressão A4
+    </div>
+    <button class="btn-action btn-print" onclick="window.print()">
+      <span>🖨️</span> <strong>Salvar como PDF / Imprimir</strong>
+    </button>
+  </div>
+
+  <!-- Painel de Personalização: Escolher o que Mostrar ou Ocultar -->
+  <div class="pdf-customizer-box">
+    <div class="customizer-title">
+      <span>⚙️</span> Escolha o que você quer MOSTRAR ou ESCONDER no PDF deste cliente:
+    </div>
+    <div class="filter-pills">
+      <label class="pill-check">
+        <input type="checkbox" id="chk-queixa" checked onchange="toggleItem('box-queixa', this.checked)">
+        <span>Queixa do Cliente</span>
+      </label>
+      <label class="pill-check">
+        <input type="checkbox" id="chk-notas" checked onchange="toggleItem('box-notas', this.checked)">
+        <span>Notas de Bancada</span>
+      </label>
+      <label class="pill-check">
+        <input type="checkbox" id="chk-dtcs" checked onchange="toggleItem('box-dtcs', this.checked)">
+        <span>Códigos de Falha (DTCs)</span>
+      </label>
+      <label class="pill-check">
+        <input type="checkbox" id="chk-fotos" checked onchange="toggleItem('sec-fotos-laudo', this.checked)">
+        <span>Fotos & Evidências</span>
+      </label>
+      <label class="pill-check">
+        <input type="checkbox" id="chk-pendencias" checked onchange="toggleItem('sec-pendencias-laudo', this.checked)">
+        <span>Pontos de Atenção (Pendências)</span>
+      </label>
+      <label class="pill-check">
+        <input type="checkbox" id="chk-termo" checked onchange="toggleItem('sec-termo-assinatura', this.checked)">
+        <span>Termo & Assinaturas</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Documento Oficial Formatado -->
+  <div class="a4-page" id="documento-laudo">
+
+    <!-- Cabeçalho Oficial -->
+    <header class="laudo-header">
+      <div>
+        <div class="shop-title" id="shop-name">OFICINA MECÂNICA</div>
+        <div class="shop-subtitle">Centro Especializado em Diagnóstico Automotivo & Gestão Técnica</div>
+        <div style="font-size: 0.82rem; color: #475569; margin-top: 4px;">
+          WhatsApp / Contato: <strong id="shop-phone">-</strong>
+        </div>
+      </div>
+      <div class="os-badge-box">
+        <div class="os-number-text" id="laudo-os-num">OS #0000</div>
+        <div class="os-date-text" id="laudo-emissao">Emissão: -</div>
+        <div style="margin-top: 4px;">
+          <span style="background: #e2e8f0; color: #0f172a; font-weight: 800; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;" id="laudo-status-badge">CONCLUÍDO</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 1. Dados do Veículo e Proprietário -->
+    <section class="section-box">
+      <div class="section-title">
+        <span>1. Prontuário do Veículo & Cliente</span>
+      </div>
+      <div class="vehicle-grid">
+        <div class="grid-cell">
+          <span class="cell-label">Placa</span>
+          <span class="plate-badge" id="v-placa">...</span>
+        </div>
+        <div class="grid-cell" style="grid-column: span 2;">
+          <span class="cell-label">Modelo / Versão / Ano</span>
+          <span class="cell-value" id="v-modelo">...</span>
+        </div>
+        <div class="grid-cell">
+          <span class="cell-label">Quilometragem</span>
+          <span class="cell-value" id="v-km">...</span>
+        </div>
+
+        <div class="grid-cell" style="grid-column: span 2;">
+          <span class="cell-label">Proprietário / Cliente</span>
+          <span class="cell-value" id="c-nome">...</span>
+        </div>
+        <div class="grid-cell">
+          <span class="cell-label">Telefone / WhatsApp</span>
+          <span class="cell-value" id="c-tel">...</span>
+        </div>
+        <div class="grid-cell">
+          <span class="cell-label">Entrada no Pátio</span>
+          <span class="cell-value" id="os-data-entrada">...</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Relato Inicial & Diagnóstico de Bancada -->
+    <section class="section-box" id="sec-diagnostico-info">
+      <div class="section-title">
+        <span>2. Relato Inicial & Diagnóstico Técnico</span>
+      </div>
+      <!-- Queixa -->
+      <div id="box-queixa" style="font-size: 0.88rem; margin-bottom: 6px;">
+        <span style="font-weight: 700; color: #475569;">Queixa Informada pelo Cliente:</span>
+        <div id="v-queixa" style="margin-top: 2px; color: #0f172a;">-</div>
+      </div>
+      <!-- Notas Técnicas -->
+      <div id="box-notas" style="font-size: 0.88rem; margin-top: 8px;">
+        <span style="font-weight: 700; color: #475569;">Conclusões Técnicas / Testes de Bancada:</span>
+        <div id="v-notas" style="margin-top: 2px; color: #0f172a;">-</div>
+      </div>
+      <!-- Códigos DTC -->
+      <div id="box-dtcs" style="margin-top: 8px; display: none;">
+        <span style="font-weight: 700; color: #475569; font-size: 0.8rem;">CÓDIGOS DE FALHA IDENTIFICADOS (SCANNER / DTC):</span>
+        <div id="dtc-tags-list" style="margin-top: 4px;"></div>
+      </div>
+    </section>
+
+    <!-- 3. Serviços & Mão de Obra Realizados -->
+    <section class="section-box">
+      <div class="section-title">
+        <span>3. Serviços & Mão de Obra Executados</span>
+        <span style="font-weight: 700; color: #059669;" id="subtotal-servicos-top">R$ 0,00</span>
+      </div>
+      <table class="laudo-table">
+        <thead>
+          <tr>
+            <th>Descrição do Serviço / Mão de Obra</th>
+            <th style="width: 180px; text-align: center;">Modalidade</th>
+            <th style="width: 60px; text-align: center;">Qtd</th>
+            <th style="width: 110px; text-align: right;">Total</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-laudo-servicos">
+          <!-- Injetado via JS -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 4. Peças & Insumos Aplicados -->
+    <section class="section-box">
+      <div class="section-title">
+        <span>4. Peças & Insumos Aplicados</span>
+        <span style="font-weight: 700; color: #2563eb;" id="subtotal-pecas-top">R$ 0,00</span>
+      </div>
+      <table class="laudo-table">
+        <thead>
+          <tr>
+            <th>Descrição da Peça</th>
+            <th style="width: 180px; text-align: center;">Origem</th>
+            <th style="width: 60px; text-align: center;">Qtd</th>
+            <th style="width: 110px; text-align: right;">Total</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-laudo-pecas">
+          <!-- Injetado via JS -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Totalização Transparente -->
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 14px;">
+      <table class="total-summary-table">
+        <tr>
+          <td style="color: #64748b;">Subtotal Serviços / Diagnóstico:</td>
+          <td style="text-align: right; font-weight: 700;" id="sum-servicos">R$ 0,00</td>
+        </tr>
+        <tr>
+          <td style="color: #64748b;">Subtotal Peças:</td>
+          <td style="text-align: right; font-weight: 700;" id="sum-pecas">R$ 0,00</td>
+        </tr>
+        <tr class="total-geral-row">
+          <td style="color: #0f172a;">VALOR TOTAL DA OS:</td>
+          <td style="text-align: right; color: #059669;" id="sum-geral">R$ 0,00</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- 5. Fotos & Evidências (Vistoria / Osciloscópio / Scanner) -->
+    <section class="section-box" id="sec-fotos-laudo" style="display: none;">
+      <div class="section-title">
+        <span>📸 5. Registro Fotográfico & Evidências Técnicas</span>
+      </div>
+      <div class="laudo-photos-grid" id="laudo-photos-container">
+        <!-- Injetado via JS -->
+      </div>
+    </section>
+
+    <!-- 6. Pontos de Atenção / Pendências (Respaldo) -->
+    <section class="section-box" id="sec-pendencias-laudo" style="border-color: #fcd34d; background-color: #fffbeb; display: none;">
+      <div class="section-title" style="color: #b45309; border-color: #fde68a;">
+        <span>⚠️ 6. Pontos de Atenção para Próxima Revisão (Itens Encontrados e Não Mexidos)</span>
+      </div>
+      <div style="font-size: 0.8rem; color: #78350f; margin-bottom: 6px;">
+        Os itens abaixo foram identificados na inspeção e não foram autorizados para reparo nesta ocasião. Recomendamos acompanhamento preventivo no prazo indicado:
+      </div>
+      <ul id="lista-pendencias-laudo" style="margin-left: 20px; font-size: 0.85rem; color: #92400e;">
+        <!-- Injetado via JS -->
+      </ul>
+    </section>
+
+    <!-- 7. Termo Legal de Garantia (CDC) & Assinaturas -->
+    <div id="sec-termo-assinatura">
+      <div class="termo-legal">
+        <strong>TERMO DE ENTREGA E GARANTIA:</strong> O veículo acima especificado foi entregue em perfeitas condições de uso e funcionamento relativo aos serviços contratados. A oficina concede garantia legal de 90 (noventa) dias, nos termos do Artigo 26, Inciso II do Código de Defesa do Consumidor (Lei 8.078/90), exclusivamente sobre a mão de obra realizada e peças novas comercializadas pela oficina. Não estão cobertas peças fornecidas pelo cliente, mau uso ou intervenção de terceiros.
+      </div>
+
+      <!-- Assinaturas -->
+      <div class="signature-grid">
+        <div>
+          <div class="signature-line" id="sign-shop-name">Oficina Mecânica</div>
+          <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">Responsável Técnico / Oficina</div>
+        </div>
+        <div>
+          <div class="signature-line" id="sign-client-name">Cliente / Proprietário</div>
+          <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">Declaro que retirei o veículo e conferi os itens</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    let osId = null;
+    if (pathParts[0] === 'laudo' || pathParts[0] === 'os') osId = pathParts[1] || null;
+    if (!osId || osId === 'laudo' || osId === 'os') {
+      window.location.replace('/');
+      throw new Error('Laudo sem identificador de OS');
+    }
+
+    document.getElementById('link-voltar').href = `/os/${osId}`;
+
+    // Alternar visibilidade de qualquer seção instantaneamente
+    function toggleItem(elementId, visible) {
+      const el = document.getElementById(elementId);
+      if (el) {
+        el.style.display = visible ? 'block' : 'none';
+      }
+    }
+
+    // Alternar foto individual
+    function toggleFotoIndividual(fotoId, visible) {
+      const el = document.getElementById(`photo-card-${fotoId}`);
+      if (el) {
+        el.style.display = visible ? 'flex' : 'none';
+      }
+    }
+
+    async function carregarLaudoPDF() {
+      try {
+        const [os, config] = await Promise.all([
+          API.get(`/api/os/${osId}`),
+          API.get('/api/config')
+        ]);
+
+        // Cabeçalho
+        document.getElementById('shop-name').innerText = config.nome_oficina || 'OFICINA PRO';
+        document.getElementById('shop-phone').innerText = config.telefone_whatsapp || '-';
+        document.getElementById('sign-shop-name').innerText = config.nome_oficina || 'Oficina Pro';
+
+        document.getElementById('laudo-os-num').innerText = `OS #${String(os.numero_os).padStart(4, '0')}`;
+        document.getElementById('laudo-emissao').innerText = `Emissão: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}`;
+        document.getElementById('laudo-status-badge').innerText = (os.status_patio || 'Concluído').toUpperCase();
+
+        // Veículo e Cliente
+        document.getElementById('v-placa').innerText = Utils.formatPlaca(os.placa);
+        document.getElementById('v-modelo').innerText = os.modelo_ano;
+        document.getElementById('v-km').innerText = Utils.formatKm(os.km_entrada);
+        document.getElementById('c-nome').innerText = os.cliente_nome;
+        document.getElementById('sign-client-name').innerText = os.cliente_nome;
+        document.getElementById('c-tel').innerText = os.cliente_telefone;
+        document.getElementById('os-data-entrada').innerText = Utils.formatDate(os.created_at);
+
+        // Queixa e Notas
+        document.getElementById('v-queixa').innerText = os.queixa_cliente || 'Nenhum relato específico informado.';
+        document.getElementById('v-notas').innerText = os.notas_bancada || 'Inspeção e diagnósticos realizados conforme normas técnicas.';
+
+        // DTCs
+        if (os.dtcs && os.dtcs.length > 0) {
+          document.getElementById('box-dtcs').style.display = 'block';
+          document.getElementById('dtc-tags-list').innerHTML = os.dtcs.map(d => `
+            <span style="display: inline-block; background: #e2e8f0; padding: 2px 8px; border-radius: 4px; font-size: 0.78rem; font-family: monospace; margin-right: 6px; margin-bottom: 4px;">
+              <strong>${d.codigo}</strong>: ${d.descricao || d.status}
+            </span>
+          `).join('');
+        }
+
+        // Serviços (Diagnóstico e Inclusos)
+        const diagItem = (os.itens || []).find(i => i.modalidade_cobranca === 'taxa_diagnostico');
+        const tarefasInclusas = (os.itens || []).filter(i => i.modalidade_cobranca === 'incluso_diagnostico');
+        const servicosExtras = (os.itens || []).filter(i => i.tipo === 'servico' && i.modalidade_cobranca !== 'taxa_diagnostico' && i.modalidade_cobranca !== 'incluso_diagnostico');
+        const pecas = (os.itens || []).filter(i => i.tipo === 'peca');
+
+        let servicosRows = '';
+        if (diagItem) {
+          servicosRows += `
+            <tr style="font-weight: 700; background-color: #f8fafc;">
+              <td>${diagItem.descricao}</td>
+              <td style="text-align: center;"><span style="color: #2563eb; font-weight: 700;">Taxa de Diagnóstico</span></td>
+              <td style="text-align: center;">1</td>
+              <td style="text-align: right; font-weight: 800;">${Utils.formatCurrency(diagItem.preco_venda_total)}</td>
+            </tr>
+          `;
+          tarefasInclusas.forEach(t => {
+            servicosRows += `
+              <tr class="row-tarefa-inclusa">
+                <td style="padding-left: 24px;">
+                  <span style="color: #166534; font-weight: bold;">↳ ✓</span> ${t.descricao}
+                </td>
+                <td style="text-align: center;">
+                  <span class="badge-incluso">✓ Incluso no Diagnóstico</span>
+                </td>
+                <td style="text-align: center; color: #166534;">1</td>
+                <td style="text-align: right; color: #166534; font-weight: 700;">R$ 0,00</td>
+              </tr>
+            `;
+          });
+        }
+
+        servicosExtras.forEach(s => {
+          servicosRows += `
+            <tr>
+              <td><strong>${s.descricao}</strong></td>
+              <td style="text-align: center; color: #64748b;">Mão de Obra</td>
+              <td style="text-align: center;">${s.quantidade}</td>
+              <td style="text-align: right; font-weight: 800;">${Utils.formatCurrency(s.preco_venda_total)}</td>
+            </tr>
+          `;
+        });
+
+        document.getElementById('tbody-laudo-servicos').innerHTML = servicosRows || `<tr><td colspan="4" style="text-align: center; color: #94a3b8;">Nenhum serviço discriminado.</td></tr>`;
+
+        // Peças
+        let pecasRows = '';
+        if (pecas.length === 0) {
+          pecasRows = `<tr><td colspan="4" style="text-align: center; color: #94a3b8;">Nenhuma peça aplicada.</td></tr>`;
+        } else {
+          pecas.forEach(p => {
+            pecasRows += `
+              <tr>
+                <td><strong>${p.descricao}</strong></td>
+                <td style="text-align: center;">
+                  ${p.origem === 'cliente' 
+                    ? '<span style="color: #d97706; font-weight: 700;">👤 Do Cliente (R$ 0)</span>' 
+                    : '<span style="color: #2563eb; font-weight: 700;">🏢 Nova (Oficina)</span>'}
+                </td>
+                <td style="text-align: center;">${p.quantidade}</td>
+                <td style="text-align: right; font-weight: 800;">${Utils.formatCurrency(p.preco_venda_total)}</td>
+              </tr>
+            `;
+          });
+        }
+        document.getElementById('tbody-laudo-pecas').innerHTML = pecasRows;
+
+        // Totais
+        document.getElementById('subtotal-servicos-top').innerText = Utils.formatCurrency(os.totais.totalServicos);
+        document.getElementById('subtotal-pecas-top').innerText = Utils.formatCurrency(os.totais.totalPecas);
+        document.getElementById('sum-servicos').innerText = Utils.formatCurrency(os.totais.totalServicos);
+        document.getElementById('sum-pecas').innerText = Utils.formatCurrency(os.totais.totalPecas);
+        document.getElementById('sum-geral').innerText = Utils.formatCurrency(os.totais.totalGeral);
+
+        // Fotos / Evidências
+        const fotos = os.evidencias || [];
+        if (fotos.length > 0) {
+          document.getElementById('sec-fotos-laudo').style.display = 'block';
+          document.getElementById('laudo-photos-container').innerHTML = fotos.map((f, idx) => `
+            <div class="laudo-photo-item" id="photo-card-${f.id}">
+              <img src="${f.storage_path}" class="laudo-photo-img" alt="Foto">
+              <div class="laudo-photo-label">
+                <span>${f.titulo_observacao || (f.categoria === 'vistoria_entrada' ? 'Vistoria' : 'Foto Técnica')}</span>
+                <label class="laudo-photo-toggle" style="cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Desmarque para esconder esta foto específica">
+                  <input type="checkbox" checked onchange="toggleFotoIndividual('${f.id}', this.checked)">
+                  <span style="font-size: 0.68rem; color: #64748b;">No PDF</span>
+                </label>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          document.getElementById('chk-fotos').checked = false;
+          document.getElementById('sec-fotos-laudo').style.display = 'none';
+        }
+
+        // Pendências (Respaldo)
+        if (os.pendencias && os.pendencias.length > 0) {
+          document.getElementById('sec-pendencias-laudo').style.display = 'block';
+          document.getElementById('lista-pendencias-laudo').innerHTML = os.pendencias.map(p => `
+            <li style="margin-bottom: 4px;">
+              <strong>${p.descricao_defeito}</strong> — Urgência: <strong>${p.urgencia.toUpperCase()}</strong> (Data recomendada até: ${Utils.formatDateSimple(p.data_prevista_retorno)})
+            </li>
+          `).join('');
+        }
+
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao carregar laudo: ' + err.message);
+      }
+    }
+
+    carregarLaudoPDF();
+  </script>
+</body>
+</html>

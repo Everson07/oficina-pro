@@ -31,7 +31,8 @@ export async function onRequest(context) {
     if (path === '/os' || path === '/os/' || path === '/ficha' || path === '/ficha/') return Response.redirect(new URL('/', request.url), 302);
     if (path.startsWith('/os/') || path.startsWith('/ficha/')) return context.env.ASSETS.fetch(new Request(new URL('/os-ficha-v3', request.url), request));
     if (path.startsWith('/cliente/')) return context.env.ASSETS.fetch(new Request(new URL('/cliente.html', request.url), request));
-    if (path.startsWith('/laudo/') || path.endsWith('/pdf')) return context.env.ASSETS.fetch(new Request(new URL('/laudo.html', request.url), request));
+    if (path === '/laudo' || path === '/laudo/' || path === '/pdf') return Response.redirect(new URL('/', request.url), 302);
+    if (path.startsWith('/laudo/') || path.endsWith('/pdf')) return context.env.ASSETS.fetch(new Request(new URL('/laudo-v3', request.url), request));
     return context.next();
   }
 
