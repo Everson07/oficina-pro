@@ -46,6 +46,10 @@ async function getVeiculoByPlaca(placa) {
   return unwrap(await supabase.from('veiculos').select('*').eq('placa', normalizePlate(placa)).maybeSingle());
 }
 
+async function deleteVeiculo(id) {
+  return unwrap(await supabase.from('veiculos').delete().eq('id', id).select('id').maybeSingle());
+}
+
 async function createOrUpdateVeiculo(data) {
   const placa = normalizePlate(data.placa);
   const existing = await getVeiculoByPlaca(placa);
@@ -293,7 +297,7 @@ async function aprovarOrcamentoCliente(token) {
 module.exports = {
   isSupabase: true,
   uploadEvidence,
-  getConfig, updateConfig, getVeiculoByPlaca, createOrUpdateVeiculo, searchVeiculosEClientes,
+  getConfig, updateConfig, getVeiculoByPlaca, deleteVeiculo, createOrUpdateVeiculo, searchVeiculosEClientes,
   createOS, getOSById, updateOS, updateOSStatus, listPatio, listHistoricoVeiculo,
   addDTC, deleteDTC, addEvidencia, deleteEvidencia, addItemFinanceiro, deleteItemFinanceiro,
   addPendencia, toggleResolverPendencia, getDashboardStats, getPortalCliente, aprovarOrcamentoCliente

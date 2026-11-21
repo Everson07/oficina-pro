@@ -167,6 +167,11 @@ function getVeiculoByPlaca(placa) {
   return db.prepare("SELECT * FROM veiculos WHERE REPLACE(REPLACE(UPPER(placa), '-', ''), ' ', '') = ?").get(p);
 }
 
+function deleteVeiculo(id) {
+  const result = db.prepare('DELETE FROM veiculos WHERE id = ?').run(id);
+  return result.changes > 0 ? { id } : null;
+}
+
 function createOrUpdateVeiculo(data) {
   const placaLimpa = data.placa.toUpperCase().trim();
   const existente = getVeiculoByPlaca(placaLimpa);
@@ -680,6 +685,7 @@ module.exports = {
   getConfig,
   updateConfig,
   getVeiculoByPlaca,
+  deleteVeiculo,
   createOrUpdateVeiculo,
   searchVeiculosEClientes,
   createOS,

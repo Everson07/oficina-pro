@@ -129,6 +129,11 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Busca de Veículo por Placa
+    if (pathname.startsWith('/api/veiculo/') && method === 'DELETE') {
+      const id = pathname.split('/')[3];
+      const removed = await repo.deleteVeiculo(id);
+      return sendJSON(res, 200, { success: true, removed: Boolean(removed) });
+    }
     if (pathname.startsWith('/api/veiculo/') && method === 'GET') {
       const parts = pathname.split('/');
       const placaOuId = parts[3];
