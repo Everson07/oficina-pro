@@ -414,7 +414,7 @@
                   </select>
                 </div>
               </div>
-              <button type="button" class="btn btn-primary btn-sm os-card-open" onclick="event.stopPropagation(); window.location.assign('/ficha/${os.id}');" aria-label="Abrir ficha e adicionar valores da OS ${String(os.numero_os).padStart(4, '0')}">Abrir ficha / valores ➜</button>
+              <a class="btn btn-primary btn-sm os-card-open" href="/ficha/${os.id}" onclick="event.stopPropagation();" aria-label="Abrir ficha e adicionar valores da OS ${String(os.numero_os).padStart(4, '0')}">Abrir ficha / valores ➜</a>
             </div>
           `;
           document.getElementById(`cards-${col}`).insertAdjacentHTML('beforeend', cardHtml);
