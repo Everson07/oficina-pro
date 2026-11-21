@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oficina-pro-v1';
+const CACHE_NAME = 'oficina-pro-v2';
 const APP_SHELL = [
   '/',
   '/index.html',

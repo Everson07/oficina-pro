@@ -383,7 +383,7 @@
         if (counts[col] !== undefined) {
           counts[col]++;
           const cardHtml = `
-            <div class="os-card" onclick="window.location.href='/os/${os.id}'" draggable="true" ondragstart="handleDragStart(event, '${os.id}')">
+            <div class="os-card" role="link" tabindex="0" aria-label="Abrir ficha da OS ${String(os.numero_os).padStart(4, '0')}" onclick="abrirFichaOS(event, '${os.id}')" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); abrirFichaOS(event, '${os.id}'); }" draggable="true" ondragstart="handleDragStart(event, '${os.id}')">
               <div class="os-card-top">
                 <span class="os-num">OS #${String(os.numero_os).padStart(4, '0')}</span>
                 <span class="license-plate">
@@ -414,6 +414,7 @@
                   </select>
                 </div>
               </div>
+              <a class="btn btn-primary btn-sm os-card-open" href="/os/${os.id}" onclick="event.stopPropagation();" aria-label="Abrir ficha e adicionar valores da OS ${String(os.numero_os).padStart(4, '0')}">Abrir ficha / valores ➜</a>
             </div>
           `;
           document.getElementById(`cards-${col}`).insertAdjacentHTML('beforeend', cardHtml);
@@ -425,6 +426,11 @@
       });
 
       setupDropZones();
+    }
+
+    function abrirFichaOS(event, id) {
+      if (event?.target?.closest('select, option, a, button')) return;
+      window.location.href = `/os/${id}`;
     }
 
     async function mudarStatusOS(id, novoStatus) {
