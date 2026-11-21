@@ -1353,7 +1353,9 @@
     // GERAÇÃO DE PDF / LAUDO OFICIAL DO CLIENTE (A4)
     // ------------------------------------------------------------------------
     function imprimirOSPDF() {
-      window.open(`/laudo/${osId}`, '_blank');
+      const url = `/laudo/${encodeURIComponent(osId)}`;
+      const popup = window.open(url, '_blank');
+      if (!popup) window.location.assign(url);
     }
 
     // Inicialização
