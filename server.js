@@ -3,9 +3,11 @@ const url = require('node:url');
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
-const repo = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? require('./db-supabase.js')
-  : require('./db.js');
+const hasSupabaseConfig = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+if (process.env.RENDER && !hasSupabaseConfig) {
+  throw new Error('SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são obrigatórias no Render; SQLite temporário foi bloqueado.');
+}
+const repo = hasSupabaseConfig ? require('./db-supabase.js') : require('./db.js');
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -94,6 +96,10 @@ const server = http.createServer(async (req, res) => {
     // ------------------------------------------------------------------------
     // ROTAS DE API
     // ------------------------------------------------------------------------
+
+    if (pathname === '/api/health' && method === 'GET') {
+      return sendJSON(res, 200, { ok: true, storage: repo.isSupabase ? 'supabase' : 'sqlite-local' });
+    }
 
     // Configurações
     if (pathname === '/api/config' && method === 'GET') {
