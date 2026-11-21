@@ -414,7 +414,7 @@
                   </select>
                 </div>
               </div>
-              <button type="button" class="btn btn-primary btn-sm os-card-open" onclick="event.stopPropagation(); window.location.assign('/os/${os.id}');" aria-label="Abrir ficha e adicionar valores da OS ${String(os.numero_os).padStart(4, '0')}">Abrir ficha / valores ➜</button>
+              <button type="button" class="btn btn-primary btn-sm os-card-open" onclick="event.stopPropagation(); window.location.assign('/ficha/${os.id}');" aria-label="Abrir ficha e adicionar valores da OS ${String(os.numero_os).padStart(4, '0')}">Abrir ficha / valores ➜</button>
             </div>
           `;
           document.getElementById(`cards-${col}`).insertAdjacentHTML('beforeend', cardHtml);
@@ -430,7 +430,7 @@
 
     function abrirFichaOS(event, id) {
       if (event?.target?.closest('select, option, button')) return;
-      window.location.href = `/os/${id}`;
+      window.location.href = `/ficha/${id}`;
     }
 
     async function mudarStatusOS(id, novoStatus) {
@@ -552,7 +552,7 @@
           status_patio: document.getElementById('nova-status').value
         };
         const nova = await API.post('/api/os', payload);
-        window.location.href = `/os/${nova.id}`;
+        window.location.href = `/ficha/${nova.id}`;
       } catch (err) {
         criandoOS = false;
         if (submitButton) {
