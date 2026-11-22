@@ -79,6 +79,48 @@ async function searchVeiculosEClientes(query) {
   });
 }
 
+function normalizePhone(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+async function listClientesAgrupados(limit = 100) {
+  const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 500);
+  const vehicles = unwrap(await supabase.from('veiculos').select('*').order('created_at', { ascending: false }).limit(safeLimit));
+  if (!vehicles.length) return [];
+  const vehicleIds = vehicles.map(vehicle => vehicle.id);
+  const osRows = unwrap(await supabase.from('ordens_servico')
+    .select('id,veiculo_id,numero_os,created_at,status_patio')
+    .in('veiculo_id', vehicleIds)
+    .order('created_at', { ascending: false }));
+  const groups = new Map();
+  for (const vehicle of vehicles) {
+    const phone = normalizePhone(vehicle.cliente_telefone);
+    const key = phone || `sem-telefone:${vehicle.id}`;
+    if (!groups.has(key)) {
+      groups.set(key, {
+        chave: key,
+        cliente_nome: vehicle.cliente_nome,
+        cliente_telefone: vehicle.cliente_telefone || '',
+        veiculos: []
+      });
+    }
+    const history = osRows.filter(os => os.veiculo_id === vehicle.id);
+    groups.get(key).veiculos.push({
+      id: vehicle.id,
+      placa: vehicle.placa,
+      modelo_ano: vehicle.modelo_ano,
+      chassi: vehicle.chassi,
+      total_passagens: history.length,
+      ultima_passagem: history[0]?.created_at || null,
+      ultima_os: history[0]?.numero_os || null,
+      ultima_os_id: history[0]?.id || null
+    });
+  }
+  return [...groups.values()]
+    .map(group => ({ ...group, total_veiculos: group.veiculos.length }))
+    .sort((a, b) => b.total_veiculos - a.total_veiculos || a.cliente_nome.localeCompare(b.cliente_nome, 'pt-BR'));
+}
+
 async function createOS(data) {
   const veiculo = await createOrUpdateVeiculo(data);
   const lastNumber = unwrap(await supabase.from('ordens_servico').select('numero_os').order('numero_os', { ascending: false }).limit(1));
@@ -325,7 +367,7 @@ async function aprovarOrcamentoCliente(token) {
 module.exports = {
   isSupabase: true,
   uploadEvidence,
-  getConfig, updateConfig, getVeiculoByPlaca, deleteVeiculo, createOrUpdateVeiculo, searchVeiculosEClientes,
+  getConfig, updateConfig, getVeiculoByPlaca, deleteVeiculo, createOrUpdateVeiculo, searchVeiculosEClientes, listClientesAgrupados,
   createOS, renumberOS, getOSById, updateOS, updateOSStatus, listPatio, listEntregues, listHistoricoVeiculo,
   addDTC, deleteDTC, addEvidencia, deleteEvidencia, addItemFinanceiro, deleteItemFinanceiro,
   addPendencia, toggleResolverPendencia, getDashboardStats, getPortalCliente, aprovarOrcamentoCliente

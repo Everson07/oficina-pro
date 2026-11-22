@@ -184,6 +184,19 @@
       </details>
     </section>
 
+    <!-- Consulta intermediária: clientes agrupados por telefone -->
+    <section class="clientes-section" id="clientes-section">
+      <details id="clientes-details">
+        <summary class="clientes-summary">
+          <span>👥 Clientes e veículos cadastrados</span>
+          <span class="col-count" id="count-clientes">0</span>
+        </summary>
+        <div class="clientes-list" id="clientes-list">
+          <div class="clientes-empty">Carregando clientes...</div>
+        </div>
+      </details>
+    </section>
+
   </main>
 
   <!-- MODAL: NOVA ENTRADA / OS RÁPIDA (ZERO BUROCRACIA) -->
@@ -374,6 +387,7 @@
         // Renderiza Kanban
         await renderKanban();
         await renderEntregues();
+        await renderClientesAgrupados();
 
       } catch (err) {
         console.error('Erro ao carregar dashboard:', err);
@@ -474,6 +488,46 @@
         count.innerText = '0';
         container.innerHTML = '<div class="entregues-empty">Não foi possível carregar o histórico.</div>';
         console.error('Erro ao carregar entregues:', err);
+      }
+    }
+
+    async function renderClientesAgrupados() {
+      const container = document.getElementById('clientes-list');
+      const count = document.getElementById('count-clientes');
+      try {
+        const clientes = await API.get('/api/clientes?limit=100');
+        count.innerText = clientes.length;
+        if (!clientes.length) {
+          container.innerHTML = '<div class="clientes-empty">Nenhum cliente cadastrado ainda.</div>';
+          return;
+        }
+        container.innerHTML = clientes.map(cliente => `
+          <div class="cliente-group-row">
+            <div class="cliente-group-head">
+              <div>
+                <strong>${cliente.cliente_nome || 'Cliente sem nome'}</strong>
+                <span class="cliente-phone">${cliente.cliente_telefone || 'Sem telefone'}</span>
+              </div>
+              <span class="badge badge-blue">${cliente.total_veiculos} veículo${cliente.total_veiculos === 1 ? '' : 's'}</span>
+            </div>
+            <div class="cliente-vehicles">
+              ${cliente.veiculos.map(vehicle => `
+                <a class="cliente-vehicle" href="${vehicle.ultima_os_id ? `/ficha/${vehicle.ultima_os_id}` : '#'}" title="Abrir última ficha deste veículo">
+                  <span class="license-plate license-plate-small">
+                    <span class="plate-header">BRASIL</span>
+                    <span class="plate-number">${Utils.formatPlaca(vehicle.placa)}</span>
+                  </span>
+                  <span>${vehicle.modelo_ano || '-'}</span>
+                  <span class="cliente-vehicle-history">${vehicle.total_passagens} OS</span>
+                </a>
+              `).join('')}
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        count.innerText = '0';
+        container.innerHTML = '<div class="clientes-empty">Não foi possível carregar os clientes.</div>';
+        console.error('Erro ao carregar clientes agrupados:', err);
       }
     }
 

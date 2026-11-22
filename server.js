@@ -124,6 +124,9 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/entregues' && method === 'GET') {
       return sendJSON(res, 200, await repo.listEntregues(parsedUrl.query.limit));
     }
+    if (pathname === '/api/clientes' && method === 'GET') {
+      return sendJSON(res, 200, await repo.listClientesAgrupados(parsedUrl.query.limit));
+    }
 
     // Busca Global
     if (pathname === '/api/busca' && method === 'GET') {
