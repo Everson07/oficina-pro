@@ -175,6 +175,26 @@ async function listPatio() {
   });
 }
 
+async function listEntregues(limit = 20) {
+  const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+  const rows = unwrap(await supabase.from('ordens_servico')
+    .select('*, veiculos(*)')
+    .eq('status_patio', 'entregue')
+    .order('entregue_em', { ascending: false, nullsFirst: false })
+    .limit(safeLimit));
+  const ids = rows.map(row => row.id);
+  const items = ids.length
+    ? unwrap(await supabase.from('os_itens_financeiros').select('os_id,preco_venda_total').in('os_id', ids))
+    : [];
+  return rows.map(row => {
+    const os = withVehicle(row);
+    os.valor_total_os = items
+      .filter(item => item.os_id === row.id)
+      .reduce((sum, item) => sum + (Number(item.preco_venda_total) || 0), 0);
+    return os;
+  });
+}
+
 async function listHistoricoVeiculo(veiculoId) {
   const rows = unwrap(await supabase.from('ordens_servico').select('*').eq('veiculo_id', veiculoId).order('numero_os', { ascending: false }));
   const ids = rows.map(row => row.id);
@@ -306,7 +326,7 @@ module.exports = {
   isSupabase: true,
   uploadEvidence,
   getConfig, updateConfig, getVeiculoByPlaca, deleteVeiculo, createOrUpdateVeiculo, searchVeiculosEClientes,
-  createOS, renumberOS, getOSById, updateOS, updateOSStatus, listPatio, listHistoricoVeiculo,
+  createOS, renumberOS, getOSById, updateOS, updateOSStatus, listPatio, listEntregues, listHistoricoVeiculo,
   addDTC, deleteDTC, addEvidencia, deleteEvidencia, addItemFinanceiro, deleteItemFinanceiro,
   addPendencia, toggleResolverPendencia, getDashboardStats, getPortalCliente, aprovarOrcamentoCliente
 };

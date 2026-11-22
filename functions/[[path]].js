@@ -43,6 +43,7 @@ export async function onRequest(context) {
     if (path === '/api/config' && method === 'POST') return json(await repo.updateConfig(await body(request)));
     if (path === '/api/dashboard' && method === 'GET') return json(await repo.getDashboardStats());
     if (path === '/api/patio' && method === 'GET') return json(await repo.listPatio());
+    if (path === '/api/entregues' && method === 'GET') return json(await repo.listEntregues(url.searchParams.get('limit')));
     if (path === '/api/busca' && method === 'GET') return json(await repo.searchVeiculosEClientes(url.searchParams.get('q') || ''));
 
     if (path.startsWith('/api/veiculo/')) {

@@ -171,6 +171,19 @@
       </div>
     </section>
 
+    <!-- Histórico compacto de veículos entregues -->
+    <section class="entregues-section" id="entregues-section">
+      <details id="entregues-details">
+        <summary class="entregues-summary">
+          <span>🚗 Veículos entregues</span>
+          <span class="col-count" id="count-entregues">0</span>
+        </summary>
+        <div class="entregues-list" id="entregues-list">
+          <div class="entregues-empty">Carregando histórico...</div>
+        </div>
+      </details>
+    </section>
+
   </main>
 
   <!-- MODAL: NOVA ENTRADA / OS RÁPIDA (ZERO BUROCRACIA) -->
@@ -360,6 +373,7 @@
 
         // Renderiza Kanban
         await renderKanban();
+        await renderEntregues();
 
       } catch (err) {
         console.error('Erro ao carregar dashboard:', err);
@@ -426,6 +440,41 @@
       });
 
       setupDropZones();
+    }
+
+    async function renderEntregues() {
+      const container = document.getElementById('entregues-list');
+      const count = document.getElementById('count-entregues');
+      try {
+        const entregues = await API.get('/api/entregues?limit=20');
+        count.innerText = entregues.length;
+        if (!entregues.length) {
+          container.innerHTML = '<div class="entregues-empty">Nenhum veículo entregue ainda.</div>';
+          return;
+        }
+        container.innerHTML = entregues.map(os => `
+          <div class="entregue-row">
+            <div class="entregue-main">
+              <strong>OS #${String(os.numero_os).padStart(4, '0')}</strong>
+              <span class="license-plate license-plate-small">
+                <span class="plate-header">BRASIL</span>
+                <span class="plate-number">${Utils.formatPlaca(os.placa)}</span>
+              </span>
+              <span>${os.modelo_ano || '-'}</span>
+              <span class="entregue-client">👤 ${os.cliente_nome || '-'}</span>
+            </div>
+            <div class="entregue-meta">
+              <span>${Utils.formatDate(os.entregue_em)}</span>
+              <strong>${Utils.formatCurrency(os.valor_total_os)}</strong>
+              <a class="btn btn-secondary btn-sm" href="/ficha/${os.id}">Abrir ficha</a>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        count.innerText = '0';
+        container.innerHTML = '<div class="entregues-empty">Não foi possível carregar o histórico.</div>';
+        console.error('Erro ao carregar entregues:', err);
+      }
     }
 
     function abrirFichaOS(event, id) {
